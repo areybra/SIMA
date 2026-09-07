@@ -101,47 +101,123 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # ---- Database: SQLite (dev) <-> Postgres / MySQL (prod) via .env ----
-# Postgres/Supabase: DB_ENGINE=postgres (atau supabase) + DB_HOST/DB_NAME/DB_USER/DB_PASSWORD/DB_PORT (6543 untuk pooler)
-# MySQL/MariaDB: DB_ENGINE=mysql + DB_HOST/DB_NAME/DB_USER/DB_PASSWORD/DB_PORT (3306)
-DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
-if DB_ENGINE in ('postgres', 'postgresql', 'supabase'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('DB_NAME', 'postgres'),
-            'USER': env('DB_USER', 'postgres'),
-            'PASSWORD': env('DB_PASSWORD', ''),
-            'HOST': env('DB_HOST', 'localhost'),
-            'PORT': env('DB_PORT', '5432'),
-            'OPTIONS': {'sslmode': env('DB_SSLMODE', 'require')},
-            'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
-        }
-    }
-elif DB_ENGINE in ('mysql', 'mariadb'):
+# Mendukung 2 cara:
+#   1) DATABASE_URL — satu baris URL (Railway/Supabase): postgres://user:pass@host:port/db
+#      Contoh Railway: postgresql://postgres:yQoeYmoE...@thomas.proxy.rlwy.net:24876/sima
+#   2) DB_ENGINE + DB_HOST/DB_PORT/... — terpisah (legacy)
+# Jika DATABASE_URL diisi, ia diprioritaskan.
+DATABASE_URL = env('DATABASE_URL', '').strip()
+if DATABASE_URL:
+    # Coba pakai dj-database-url jika tersedia, fallback ke parsing manual
     try:
-        import pymysql  # noqa
-        pymysql.install_as_MySQLdb()
+        import dj_database_url  # type: ignore
+        DATABASES = {
+            'default': dj_database_url.parse(
+                DATABASE_URL,
+                conn_max_age=int(env('DB_CONN_MAX_AGE', '60') or 60),
+                ssl_require=False,
+            )
+        }
+        # Railway/Supabase postgres butuh sslmode=require walau URL tanpa ?sslmode=
+        if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+            opts = DATABASES['default'].setdefault('OPTIONS', {})
+            if 'sslmode' not in opts and env('DB_SSLMODE', '').strip().lower() not in ('', 'disable', 'allow'):
+                # hanya pakai sslmode jika user tidak disable
+                sslmode = env('DB_SSLMODE', 'require').strip() or 'require'
+                opts['sslmode'] = sslmode
+            # handle ?sslmode di URL sudah di-parse oleh dj-database-url via OPTIONS
     except ImportError:
-        pass
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': env('DB_NAME', 'sima'),
-            'USER': env('DB_USER', 'root'),
-            'PASSWORD': env('DB_PASSWORD', ''),
-            'HOST': env('DB_HOST', 'localhost'),
-            'PORT': env('DB_PORT', '3306'),
-            'OPTIONS': {'charset': 'utf8mb4'},
-            'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
-        }
-    }
+        # Fallback manual parsing tanpa dj-database-url
+        from urllib.parse import parse_qs, unquote, urlparse
+
+        _url = urlparse(DATABASE_URL)
+        _scheme = _url.scheme.lower()
+        _qs = parse_qs(_url.query)
+        if _scheme in ('postgres', 'postgresql', 'pgsql'):
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.postgresql',
+                    'NAME': unquote(_url.path.lstrip('/')) or env('DB_NAME', 'postgres'),
+                    'USER': unquote(_url.username or ''),
+                    'PASSWORD': unquote(_url.password or ''),
+                    'HOST': _url.hostname or 'localhost',
+                    'PORT': str(_url.port or 5432),
+                    'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
+                }
+            }
+            _opts = {}
+            if 'sslmode' in _qs:
+                _opts['sslmode'] = _qs['sslmode'][0]
+            elif env('DB_SSLMODE', '').strip():
+                _opts['sslmode'] = env('DB_SSLMODE', 'require')
+            if _opts:
+                DATABASES['default']['OPTIONS'] = _opts
+        elif _scheme in ('mysql', 'mysql2', 'mariadb'):
+            try:
+                import pymysql  # noqa
+                pymysql.install_as_MySQLdb()
+            except ImportError:
+                pass
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.mysql',
+                    'NAME': unquote(_url.path.lstrip('/')) or env('DB_NAME', 'sima'),
+                    'USER': unquote(_url.username or 'root'),
+                    'PASSWORD': unquote(_url.password or ''),
+                    'HOST': _url.hostname or 'localhost',
+                    'PORT': str(_url.port or 3306),
+                    'OPTIONS': {'charset': 'utf8mb4'},
+                    'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
+                }
+            }
+        else:
+            # fallback sqlite jika scheme tidak dikenali
+            DATABASES = {
+                'default': {
+                    'ENGINE': 'django.db.backends.sqlite3',
+                    'NAME': BASE_DIR / 'db.sqlite3',
+                }
+            }
 else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+    DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
+    if DB_ENGINE in ('postgres', 'postgresql', 'supabase'):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': env('DB_NAME', 'postgres'),
+                'USER': env('DB_USER', 'postgres'),
+                'PASSWORD': env('DB_PASSWORD', ''),
+                'HOST': env('DB_HOST', 'localhost'),
+                'PORT': env('DB_PORT', '5432'),
+                'OPTIONS': {'sslmode': env('DB_SSLMODE', 'require')},
+                'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
+            }
         }
-    }
+    elif DB_ENGINE in ('mysql', 'mariadb'):
+        try:
+            import pymysql  # noqa
+            pymysql.install_as_MySQLdb()
+        except ImportError:
+            pass
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': env('DB_NAME', 'sima'),
+                'USER': env('DB_USER', 'root'),
+                'PASSWORD': env('DB_PASSWORD', ''),
+                'HOST': env('DB_HOST', 'localhost'),
+                'PORT': env('DB_PORT', '3306'),
+                'OPTIONS': {'charset': 'utf8mb4'},
+                'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
+            }
+        }
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
