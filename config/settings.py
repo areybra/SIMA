@@ -108,30 +108,34 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # CATATAN: Hanya mendukung MySQL/MariaDB. PostgreSQL TIDAK didukung.
 DATABASE_URL = env('DATABASE_URL', '').strip().strip('"').strip("'").strip()
 
-# Auto-fix: Jika DATABASE_URL kosong, gunakan fallback MySQL Railway untuk production
-_RAILWAY_MYSQL_URL = "mysql://root:fkLfCWNxaLCcaMOKupQOJvseIbITzpgX@shortline.proxy.rlwy.net:48255/railway"
-
-# Cek apakah DATABASE_URL diisi, jika tidak gunakan fallback untuk production
+# Logika database: DATABASE_URL diprioritaskan, jika kosong pakai DB_ENGINE
 if not DATABASE_URL:
-    if not DEBUG:
-        # Production (Vercel/Railway) -> gunakan fallback MySQL Railway
-        DATABASE_URL = env('DATABASE_URL', '').strip() or "mysql://root:fkLfCWNxaLCcaMOKupQOJvseIbITzpgX@shortline.proxy.rlwy.net:48255/railway"
+    DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
+    if DB_ENGINE in ('mysql', 'mariadb'):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': env('DB_NAME', 'sima'),
+                'USER': env('DB_USER', 'root'),
+                'PASSWORD': env('DB_PASSWORD', ''),
+                'HOST': env('DB_HOST', 'localhost'),
+                'PORT': env('DB_PORT', '3306'),
+                'OPTIONS': {'charset': 'utf8mb4'},
+                'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
+            }
+        }
     else:
-        DATABASE_URL = ""
-
-# Pastikan pymysql di-install sebagai MySQLdb SEBELUM Django load MySQL backend
-try:
-    import pymysql
-    pymysql.install_as_MySQLdb()
-except ImportError:
-    pass
-
-if DATABASE_URL:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+else:
     # Reject PostgreSQL URLs explicitly
     if DATABASE_URL.strip().lower().startswith(('postgres://', 'postgresql://')):
         raise ImproperlyConfigured(
             "PostgreSQL tidak didukung. Gunakan MySQL/MariaDB URL (mysql://...). "
-            "Untuk Supabase, gunakan connection pooler MySQL atau migrasi ke MySQL."
         )
     # Coba pakai dj-database-url jika tersedia, fallback ke parsing manual
     try:
@@ -176,33 +180,6 @@ if DATABASE_URL:
                     'NAME': BASE_DIR / 'db.sqlite3',
                 }
             }
-else:
-    DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
-    if DB_ENGINE in ('mysql', 'mariadb'):
-        try:
-            import pymysql  # noqa
-            pymysql.install_as_MySQLdb()
-        except ImportError:
-            pass
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.mysql',
-                'NAME': env('DB_NAME', 'sima'),
-                'USER': env('DB_USER', 'root'),
-                'PASSWORD': env('DB_PASSWORD', ''),
-                'HOST': env('DB_HOST', 'localhost'),
-                'PORT': env('DB_PORT', '3306'),
-                'OPTIONS': {'charset': 'utf8mb4'},
-                'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
-            }
-        }
-    else:
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': BASE_DIR / 'db.sqlite3',
-            }
-        }
 
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
