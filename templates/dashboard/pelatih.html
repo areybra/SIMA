@@ -1,0 +1,45 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Dashboard Pelatih — SIMA{% endblock %}
+{% block dash %}
+<div class="row g-4">
+  <div class="col-6 col-xl-3"><div class="card-minimal p-4"><div class="small-caps">Atlet Aktif</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_atlet }}</div><a href="{% url 'atlet-list' %}" class="small" style="color:var(--accent); font-weight:700; text-decoration:none;">Kelola →</a></div></div>
+  <div class="col-6 col-xl-3"><div class="card-minimal p-4"><div class="small-caps">Pelatih</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_pelatih }}</div><div class="small" style="color:var(--muted); font-weight:600;">Terdaftar</div></div></div>
+  <div class="col-6 col-xl-3"><div class="card-minimal p-4"><div class="small-caps">Prestasi</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_prestasi }}</div><a href="{% url 'prestasi-list' %}" class="small" style="color:var(--accent); font-weight:700; text-decoration:none;">Kelola →</a></div></div>
+  <div class="col-6 col-xl-3"><div class="card-minimal p-4"><div class="small-caps">Cedera Aktif</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800; color:#DC2626;">{{ cedera_aktif }}</div><a href="{% url 'penilaian-list' %}" class="small" style="color:var(--muted); font-weight:700; text-decoration:none;">Lihat →</a></div></div>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-lg-8"><div class="card-minimal p-5">
+    <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">Tren Rata-rata Kesiapan</h5><a href="{% url 'penilaian-create' %}" class="btn btn-primary-modern btn-pill btn-sm">+ Input</a></div>
+    <canvas id="trenChart" height="120"></canvas>
+  </div></div>
+  <div class="col-lg-4"><div class="card-minimal p-5">
+    <h5 class="mb-3" style="font-family:'Outfit',sans-serif; font-weight:800;">Top 5 Atlet</h5>
+    <div class="d-flex flex-column gap-2 mb-4">{% for t in top %}<div class="d-flex justify-content-between small" style="font-weight:600; border-bottom:1px solid var(--line); padding:8px 0;"><span>{{ t.atlet__nama_lengkap }}</span><span style="font-weight:800;">{{ t.rata|floatformat:1 }}</span></div>{% empty %}<div class="small" style="color:var(--muted); font-weight:600;">Belum ada data.</div>{% endfor %}</div>
+    <h6 class="mb-2" style="font-family:'Outfit',sans-serif; font-weight:800;">Kehadiran</h6>
+    <div class="d-flex flex-wrap gap-2">{% for k,v in hadir_map.items %}<span class="shape-pill px-3 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ k }}: {{ v }}</span>{% empty %}<span class="small" style="color:var(--muted);">Belum ada.</span>{% endfor %}</div>
+  </div></div>
+</div>
+
+<div class="row g-4 mt-2">
+  <div class="col-lg-7"><div class="card-minimal p-0 overflow-hidden">
+    <div class="p-4 border-bottom" style="border-color:var(--line)!important; font-weight:800; font-family:'Outfit',sans-serif;">Penilaian Terbaru</div>
+    <div class="table-responsive"><table class="table mb-0 small">
+      <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Tanggal</th><th style="font-weight:800;">Atlet</th><th style="font-weight:800;">F/T/M</th><th style="font-weight:800;">Status</th></tr></thead>
+      <tbody>{% for p in terbaru %}<tr><td style="font-weight:600;">{{ p.tanggal }}</td><td style="font-weight:600;">{{ p.atlet.nama_lengkap }}</td><td>{{ p.fisik }}/{{ p.teknik }}/{{ p.mental }}</td><td><span class="shape-pill px-2 py-1" style="background:var(--stone); border:1px solid var(--line); font-weight:700; font-size:.75rem">{{ p.status }}</span></td></tr>{% empty %}<tr><td colspan="4" class="p-4 text-center" style="color:var(--muted); font-weight:600;">Belum ada.</td></tr>{% endfor %}</tbody>
+    </table></div>
+  </div></div>
+  <div class="col-lg-5"><div class="card-minimal p-5">
+    <h6 class="mb-3" style="font-family:'Outfit',sans-serif; font-weight:800;">Perlu Perhatian</h6>
+    {% for c in cedera_list %}<div class="py-3 border-bottom small" style="border-color:var(--line)!important"><div style="font-weight:700;">{{ c.atlet.nama_lengkap }}</div><div style="color:var(--muted); font-weight:500;">{{ c.keterangan_cedera|default:'cedera' }} · {{ c.tanggal }}</div></div>{% empty %}<p class="small" style="color:var(--muted); font-weight:600;">Tidak ada cedera aktif.</p>{% endfor %}
+    <h6 class="mt-4 mb-2" style="font-family:'Outfit',sans-serif; font-weight:800;">Agenda Terdekat</h6>
+    {% for a in agenda %}<div class="small py-1" style="font-weight:600;">{{ a.nama }} <span style="color:var(--muted);">· {{ a.tanggal_mulai }}</span></div>{% empty %}<p class="small" style="color:var(--muted);">Belum ada.</p>{% endfor %}
+  </div></div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('trenChart');
+if (ctx) new Chart(ctx, {type:'line', data:{labels: {{ tren_labels|safe }}, datasets:[{label:'Rata-rata', data: {{ tren_data|safe }}, tension:.35, borderWidth:2, borderColor:'#2563EB', backgroundColor:'rgba(37,99,235,.08)', fill:true, pointRadius:3}]}, options:{plugins:{legend:{display:false}}, scales:{y:{min:0,max:100, grid:{color:'#E6E9EF'}}, x:{grid:{display:false}}}}});
+</script>
+{% endblock %}

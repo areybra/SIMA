@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Tentang Kami — SIMA{% endblock %}
+{% block content %}
+<section class="py-5" style="background:linear-gradient(180deg, var(--stone) 0, var(--paper) 100%); border-bottom:1px solid var(--line);">
+  <div class="container">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-6">
+        <div class="section-label mb-2">Tentang Kami</div>
+        <h1 class="display-modern display-6 mb-3">{% if profil %}{{ profil.nama }}{% else %}Perguruan SIMA{% endif %}</h1>
+        <p class="lead" style="max-width:52ch;">{{ profil.tentang|default:"Pembinaan atlet multicabor yang terstruktur dan transparan. Data dikelola rapi untuk pelatih, atlet, dan jurnalis."|truncatechars:180 }}</p>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+          <span class="shape-pill px-3 py-2 small" style="background:var(--surface); border:1px solid var(--line); font-weight:700;">{% if profil.alamat %}{{ profil.alamat }}{% else %}Alamat belum diisi{% endif %}</span>
+          <span class="shape-pill px-3 py-2 small" style="background:var(--surface); border:1px solid var(--line); font-weight:700;">{{ profil.kontak|default:"Kontak —" }}</span>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="position-relative mx-auto" style="max-width:480px;">
+          <div class="shape-soft overflow-hidden" style="height:340px; background:var(--surface); border:1px solid var(--line); display:grid; place-items:center;">
+            {% if profil.logo %}<img src="{{ profil.logo.url }}" alt="logo" style="width:100%; height:100%; object-fit:cover">{% else %}<div class="text-center p-4"><div class="shape-soft mx-auto mb-3" style="width:96px; height:96px; background:var(--primary-ink); color:#fff; display:grid; place-items:center; font-family:'Outfit',sans-serif; font-weight:800; font-size:1.6rem;">S</div><div class="small-caps">Est. Perguruan</div><div class="h4" style="font-family:'Outfit',sans-serif; font-weight:800;">SIMA</div></div>{% endif %}
+          </div>
+          <div class="position-absolute shape-pill d-none d-md-flex align-items-center gap-2 px-3 py-2" style="background:var(--surface); border:1px solid var(--line); bottom:-14px; left:-12px; box-shadow:0 10px 30px rgba(15,23,42,.08); font-weight:700;"><span style="width:10px; height:10px; border-radius:50%; background:var(--accent); display:inline-block;"></span><span class="small">{{ total_cabor }} cabor · {{ total_atlet }} atlet</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="container">
+  <div class="row g-4">
+    <div class="col-md-6"><div class="card-minimal p-5 h-100">
+      <div class="small-caps mb-2">Visi</div>
+      <h3 class="h4" style="font-family:'Outfit',sans-serif; font-weight:800;">Arah pembinaan</h3>
+      <p class="mb-0 mt-3" style="color:var(--muted); font-weight:500; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;">{{ profil.visi|default:"Visi belum diisi oleh admin." }}</p>
+    </div></div>
+    <div class="col-md-6"><div class="card-minimal p-5 h-100" style="background:var(--primary-ink); color:#E2E8F0; border-color:var(--primary-ink)">
+      <div class="small-caps mb-2" style="color:#93C5FD">Misi</div>
+      <h3 class="h4" style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff">Langkah nyata</h3>
+      <p class="mb-0 mt-3" style="color:#CBD5E1; font-weight:500; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden;">{{ profil.misi|default:"Misi belum diisi oleh admin." }}</p>
+    </div></div>
+  </div>
+</section>
+
+<section class="container pb-2">
+  <div class="card-minimal p-5" style="background:var(--stone);">
+    <h5 style="font-family:'Outfit',sans-serif; font-weight:800;">Cabang Olahraga</h5>
+    <div class="d-flex flex-wrap gap-2 mt-3">
+      {% for c in cabor_list %}<span class="shape-pill px-3 py-2 small" style="background:var(--surface); border:1px solid var(--line); font-weight:700;">{{ c.nama }}</span>{% empty %}<span class="small" style="color:var(--muted); font-weight:600;">Belum ada cabor.</span>{% endfor %}
+    </div>
+    <div class="hairline my-4"></div>
+    <h5 style="font-family:'Outfit',sans-serif; font-weight:800;">Jadwal Rutin</h5>
+    <div class="row g-2 mt-3">
+      {% for j in jadwal %}<div class="col-6 col-md-4"><div class="p-3" style="background:var(--surface); border:1px solid var(--line); border-radius:14px;"><div class="small" style="font-weight:800;">{{ j.hari }}</div><div class="small" style="color:var(--muted); font-weight:600;">{{ j.jam_mulai }}–{{ j.jam_selesai }} · {{ j.lokasi }}</div></div></div>{% empty %}<div class="col-12 small" style="color:var(--muted); font-weight:600;">Belum ada jadwal.</div>{% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

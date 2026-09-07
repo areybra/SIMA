@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Prestasi — SIMA{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex flex-wrap gap-3 align-items-end justify-content-between mb-5">
+    <div>
+      <div class="section-label mb-2">Hall of Fame</div>
+      <h1 class="display-modern h2 mb-2">Prestasi atlet</h1>
+      <p class="mb-0" style="color:var(--muted); font-weight:500;">Rekam juara — filter cepat, tanpa teks berlebihan.</p>
+    </div>
+    <form class="d-flex gap-2 flex-wrap" method="get">
+      <select name="cabor" class="form-select shape-pill" style="border-radius:999px; border-color:var(--line); font-weight:600;"><option value="">Semua cabor</option>{% for c in cabor_list %}<option value="{{ c.id }}" {% if cabor_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.nama }}</option>{% endfor %}</select>
+      <select name="tingkat" class="form-select shape-pill" style="border-radius:999px; border-color:var(--line); font-weight:600;"><option value="">Semua tingkat</option><option value="kota" {% if tingkat == 'kota' %}selected{% endif %}>Kota</option><option value="provinsi" {% if tingkat == 'provinsi' %}selected{% endif %}>Provinsi</option><option value="nasional" {% if tingkat == 'nasional' %}selected{% endif %}>Nasional</option><option value="internasional" {% if tingkat == 'internasional' %}selected{% endif %}>Internasional</option></select>
+      <input name="q" value="{{ q }}" placeholder="Cari kejuaraan/atlet" class="form-control shape-pill" style="border-radius:999px; border-color:var(--line); font-weight:600;">
+      <button class="btn btn-ink btn-pill">Filter</button>
+    </form>
+  </div>
+
+  <div class="row g-3 mb-5">
+    <div class="col-6 col-lg-3"><div class="card-minimal p-4 text-center"><div class="small-caps">Total Prestasi</div><div class="h2 mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card-minimal p-4 text-center"><div class="small-caps">Emas / Juara 1</div><div class="h2 mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ emas_count }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card-minimal p-4 text-center"><div class="small-caps">Tahun Terbaru</div><div class="h2 mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ tahun_terbaru|default:"—" }}</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card-minimal p-4 text-center" style="background:var(--primary-ink); color:#E2E8F0; border-color:var(--primary-ink)"><div class="small-caps" style="color:#93C5FD">Cabor aktif</div><div class="h2 mb-0" style="font-family:'Outfit',sans-serif; font-weight:800; color:#fff">{{ cabor_list|length }}</div></div></div>
+  </div>
+
+  <div class="row g-4">
+    {% for p in prestasi %}
+    <div class="col-md-6 col-lg-4">
+      <div class="card-minimal p-4 h-100 hover-lift d-flex flex-column">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <span class="shape-pill px-3 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ p.get_tingkat_display }}</span>
+          <span class="small" style="color:var(--muted); font-weight:700;">{{ p.tahun }}</span>
+        </div>
+        <h5 class="mb-1" style="font-family:'Outfit',sans-serif; font-weight:700; color:var(--ink); line-height:1.25;">{{ p.nama_kejuaraan }}</h5>
+        <div style="color:var(--accent); font-weight:800;">{{ p.hasil }}</div>
+        <div class="small mt-2" style="color:var(--muted); font-weight:600;">{{ p.atlet.nama_lengkap }} · {{ p.atlet.cabor.nama|default:"Umum" }}</div>
+      </div>
+    </div>
+    {% empty %}<div class="col-12"><div class="card-minimal p-5 text-center dot-grid"><p style="color:var(--muted); font-weight:600;">Belum ada prestasi yang sesuai filter.</p></div></div>{% endfor %}
+  </div>
+</div>
+{% endblock %}

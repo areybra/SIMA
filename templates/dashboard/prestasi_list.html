@@ -1,0 +1,18 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Prestasi — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+  <div>
+    <div class="small-caps">Kelola</div>
+    <h3 class="mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">Prestasi</h3>
+    <p class="small mb-0" style="color:var(--muted); font-weight:500;">Rekam juara atlet.</p>
+  </div>
+  <a href="{% url 'prestasi-create' %}" class="btn btn-ink btn-pill">+ Tambah</a>
+</div>
+<div class="card-minimal p-0 overflow-hidden"><div class="table-responsive"><table class="table mb-0 small align-middle">
+  <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Kejuaraan</th><th style="font-weight:800;">Atlet</th><th style="font-weight:800;">Tingkat</th><th style="font-weight:800;">Hasil</th><th style="font-weight:800;">Tahun</th><th></th></tr></thead>
+  <tbody>{% for o in object_list %}<tr><td style="font-weight:600;">{{ o.nama_kejuaraan }}</td><td><div class="d-flex gap-2 align-items-center">{% if o.atlet.foto %}<img src="{{ o.atlet.foto.url }}" style="width:32px; height:32px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">{% else %}<div style="width:32px; height:32px; border-radius:10px; background:var(--stone); border:1px solid var(--line); display:grid; place-items:center; font-weight:800; font-size:.75rem; color:var(--muted);">{{ o.atlet.nama_lengkap|slice:":1"|upper }}</div>{% endif %}<span style="font-weight:600;">{{ o.atlet.nama_lengkap }}</span></div></td><td><span class="shape-pill px-2 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ o.get_tingkat_display }}</span></td><td style="font-weight:800; color:var(--accent);">{{ o.hasil }}</td><td style="font-weight:600;">{{ o.tahun }}</td>
+  <td class="text-nowrap"><a href="{% url 'prestasi-update' o.id %}" class="btn btn-ghost btn-pill btn-sm">Ubah</a> <a href="{% url 'prestasi-delete' o.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a></td></tr>
+  {% empty %}<tr><td colspan="6" class="p-5 text-center" style="color:var(--muted); font-weight:600;">Belum ada.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

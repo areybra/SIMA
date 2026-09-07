@@ -1,0 +1,9 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Hapus — SIMA{% endblock %}
+{% block dash %}
+<div class="card stat-card p-4" style="max-width:560px">
+  <h4 class="fw-bold">Hapus data?</h4>
+  <p>Yakin hapus <strong>{{ object }}</strong>? Tindakan ini tidak bisa dibatalkan.</p>
+  <form method="post">{% csrf_token %}<button class="btn btn-danger">Ya, hapus</button> <a href="javascript:history.back()" class="btn btn-secondary">Batal</a></form>
+</div>
+{% endblock %}

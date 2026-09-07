@@ -1,0 +1,27 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Berita — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+  <div><div class="small-caps">Jurnalis</div><h3 class="mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">Berita</h3><p class="small mb-0" style="color:var(--muted); font-weight:500;">Kelola publikasi untuk landing.</p></div>
+  <a href="{% url 'berita-jurnalis-create' %}" class="btn btn-ink btn-pill">+ Tambah Berita</a>
+</div>
+<form class="row g-2 mb-4" method="get">
+  <div class="col-md-8"><input name="q" value="{{ q }}" class="form-control shape-pill" style="border-radius:999px; border-color:var(--line);" placeholder="Cari judul/ringkasan..."></div>
+  <div class="col-md-4"><button class="btn btn-ghost btn-pill w-100">Cari</button></div>
+</form>
+<div class="card-minimal p-0 overflow-hidden">
+  <div class="table-responsive"><table class="table mb-0 small align-middle">
+    <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Judul</th><th style="font-weight:800;">Kategori</th><th style="font-weight:800;">Views</th><th style="font-weight:800;">Status</th><th style="font-weight:800;">Tanggal</th><th></th></tr></thead>
+    <tbody>
+      {% for b in object_list %}<tr>
+        <td><div style="font-weight:700;">{{ b.judul|truncatechars:56 }}</div><div class="small" style="color:var(--muted); font-weight:500;">{{ b.ringkasan|truncatechars:60 }}</div></td>
+        <td><span class="shape-pill px-2 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ b.get_kategori_display }}</span></td>
+        <td style="font-weight:700; color:var(--accent);">{{ b.views }}</td>
+        <td>{% if b.is_published %}<span class="shape-pill px-2 py-1" style="background:#DCFCE7; border:1px solid #86EFAC; font-weight:700; font-size:.72rem">Published</span>{% else %}<span class="shape-pill px-2 py-1" style="background:var(--stone); border:1px solid var(--line); font-weight:700; font-size:.72rem">Draft</span>{% endif %}</td>
+        <td style="font-weight:600;">{{ b.created_at|date:"d M Y" }}</td>
+        <td class="text-nowrap"><a href="{% url 'berita-jurnalis-update' b.id %}" class="btn btn-ghost btn-pill btn-sm">Ubah</a> <a href="{% url 'berita-jurnalis-delete' b.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a></td>
+      </tr>{% empty %}<tr><td colspan="6" class="p-5 text-center" style="color:var(--muted)">Belum ada berita.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

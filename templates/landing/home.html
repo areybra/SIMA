@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}SIMA — Beranda{% endblock %}
+{% block content %}
+<header class="hero-modern">
+  <div class="container position-relative">
+    <div class="position-absolute d-none d-lg-block shape-blob" style="width:420px; height:420px; background:linear-gradient(135deg, rgba(37,99,235,.07), rgba(14,165,233,.04)); border:1px solid var(--line); right:-60px; top:-20px; z-index:0;"></div>
+    <div class="row align-items-center g-5 position-relative" style="z-index:1">
+      <div class="col-lg-6">
+        <div class="hero-badge mb-3"><span class="dot"></span> Sistem Manajemen Atlet</div>
+        <h1 class="display-modern display-5 mb-3" style="max-width:14ch;">Kelola atlet,<br>pantau kesiapan,<br>atur jadwal.</h1>
+        <p class="lead mb-4" style="max-width:50ch;">Platform untuk pelatih dan atlet. Data fisik, teknik, mental, VO₂Max dan kehadiran dalam satu tempat. Singkat, jelas, dan mudah dipantau.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{% url 'login' %}" class="btn btn-ink btn-pill px-4">Masuk ke Dashboard</a>
+          <a href="{% url 'berita-list' %}" class="btn btn-ghost btn-pill px-4">Lihat Berita</a>
+        </div>
+        <div class="mt-4 small" style="color:var(--muted); font-weight:600;">Akun dibuat admin · Tanpa registrasi publik</div>
+      </div>
+      <div class="col-lg-6">
+        <div class="position-relative mx-auto" style="max-width:520px;">
+          <div class="card-minimal p-4 shape-soft position-relative" style="z-index:2;">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+              <span class="small-caps">Snapshot Kesiapan</span>
+              <span class="shape-pill px-3 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">Live</span>
+            </div>
+            <div class="row g-3 align-items-end" style="height:140px;">
+              {% for bar in "12345" %}
+              <div class="col-2"><div class="w-100" style="height:{% cycle '62%' '84%' '48%' '96%' '70%' %}; background: {% cycle 'var(--primary-ink)' 'var(--accent)' 'var(--primary-ink)' 'var(--accent)' 'var(--primary-ink)' %}; border-radius:14px 14px 6px 6px;"></div><div class="small text-center mt-2" style="color:var(--muted); font-weight:700;">{% cycle 'Fis' 'Tek' 'Men' 'VO₂' 'BB' %}</div></div>
+              {% endfor %}
+              <div class="col-2 d-flex flex-column justify-content-center">
+                <div class="shape-blob d-grid place-items-center mx-auto" style="width:78px; height:78px; background:var(--primary-ink); color:#fff; font-family:'Outfit',sans-serif; font-weight:800;">84<span style="font-weight:600; opacity:.7">/100</span></div>
+                <div class="small text-center mt-1" style="color:var(--muted); font-weight:700;">Rata-rata</div>
+              </div>
+            </div>
+            <div class="hairline my-4"></div>
+            <div class="row g-2 small" style="font-weight:700;">
+              <div class="col-4"><div class="p-3 text-center" style="background:var(--stone); border-radius:14px;"><div>Hadir</div><div style="color:var(--muted)">92%</div></div></div>
+              <div class="col-4"><div class="p-3 text-center" style="background:var(--stone); border-radius:14px;"><div>Cedera</div><div style="color:var(--muted)">{{ cedera_count|default:0 }}</div></div></div>
+              <div class="col-4"><div class="p-3 text-center" style="background:var(--stone); border-radius:14px;"><div>Siap</div><div style="color:var(--muted)">{{ top_atlet|length }}</div></div></div>
+            </div>
+          </div>
+          <div class="position-absolute shape-blob d-none d-md-block" style="width:160px; height:160px; background:var(--stone); border:1px solid var(--line); right:-18px; bottom:-18px; z-index:1;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- KPI — breathing space -->
+<section class="container">
+  <div class="row g-4">
+    <div class="col-6 col-lg-3"><div class="stat-minimal p-4">
+      <div class="small-caps mb-1">Atlet Aktif</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_atlet }}</div><div class="small" style="color:var(--muted); font-weight:600;">Terdaftar &amp; aktif</div>
+    </div></div>
+    <div class="col-6 col-lg-3"><div class="stat-minimal p-4">
+      <div class="small-caps mb-1">Cabor</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_cabor }}</div><div class="small" style="color:var(--muted); font-weight:600;">Multicabor</div>
+    </div></div>
+    <div class="col-6 col-lg-3"><div class="stat-minimal p-4">
+      <div class="small-caps mb-1">Prestasi</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ total_prestasi }}</div><div class="small" style="color:var(--muted); font-weight:600;">Medali &amp; juara</div>
+    </div></div>
+    <div class="col-6 col-lg-3"><div class="stat-minimal p-4">
+      <div class="small-caps mb-1">Jadwal Aktif</div><div class="h2 mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ jadwal_minggu_ini }}</div><div class="small" style="color:var(--muted); font-weight:600;">Sesi minggu ini</div>
+    </div></div>
+  </div>
+</section>
+
+<!-- Berita — short text, spacious -->
+<section class="container">
+  <div class="d-flex align-items-end justify-content-between flex-wrap gap-3 mb-4">
+    <div>
+      <div class="section-label mb-2">Kabar Perguruan</div>
+      <h2 class="display-modern h1 mb-2">Berita terbaru</h2>
+      <p class="mb-0" style="color:var(--muted); max-width:46ch; font-weight:500;">Info latihan dan event dalam format ringkas. Tidak bertele-tele.</p>
+    </div>
+    <a href="{% url 'berita-list' %}" class="btn btn-ghost btn-pill">Semua berita</a>
+  </div>
+  {% if berita_featured %}
+  <div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+      {% with b=berita_featured.0 %}
+      <a href="{% url 'berita-detail' b.slug %}" class="text-decoration-none">
+        <div class="card-minimal overflow-hidden h-100 hover-lift">
+          {% if b.cover %}<div class="shape-arch" style="height:260px; background:url('{{ b.cover.url }}') center/cover;"></div>{% else %}<div style="height:260px; background:linear-gradient(135deg, var(--stone), #fff);"></div>{% endif %}
+          <div class="p-4">
+            <span class="shape-pill px-3 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ b.get_kategori_display }}</span>
+            <h3 class="h4 mt-3 mb-2" style="color:var(--ink); font-family:'Outfit',sans-serif; font-weight:750;">{{ b.judul }}</h3>
+            <p class="small mb-2" style="color:var(--muted); font-weight:500; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ b.ringkasan|default:b.konten|truncatechars:140 }}</p>
+            <span class="small" style="color:var(--muted); font-weight:600;">{{ b.created_at|date:"d M Y" }}</span>
+          </div>
+        </div>
+      </a>
+      {% endwith %}
+    </div>
+    <div class="col-lg-5">
+      <div class="d-flex flex-column gap-3 h-100">
+        {% for b in berita_featured|slice:"1:4" %}
+        <a href="{% url 'berita-detail' b.slug %}" class="text-decoration-none">
+          <div class="card-minimal p-3 d-flex gap-3 align-items-center hover-lift">
+            <div class="shape-soft flex-shrink-0" style="width:84px; height:84px; background:{% if b.cover %}url('{{ b.cover.url }}') center/cover{% else %}var(--stone){% endif %}; border:1px solid var(--line);"></div>
+            <div>
+              <span class="small-caps" style="font-size:.64rem">{{ b.get_kategori_display }}</span>
+              <div class="small" style="color:var(--ink); font-weight:700; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;">{{ b.judul }}</div>
+              <div class="small" style="color:var(--muted); font-weight:600;">{{ b.created_at|date:"d M Y" }}</div>
+            </div>
+          </div>
+        </a>
+        {% endfor %}
+        {% if not berita_featured|slice:"1:2" %}<div class="card-minimal p-4 text-center" style="color:var(--muted); font-weight:600;">Belum ada berita lain.</div>{% endif %}
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="card-minimal p-5 text-center dot-grid">
+    <h5 style="font-family:'Outfit',sans-serif; font-weight:800;">Belum ada berita</h5>
+    <p class="small mx-auto" style="color:var(--muted); max-width:46ch; font-weight:500;">Tambah berita via Dashboard Jurnalis.</p>
+  </div>
+  {% endif %}
+</section>
+
+<!-- Tentang + Prestasi — concise, airy -->
+<section class="container">
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <div class="card-minimal p-5 position-relative overflow-hidden">
+        <div class="section-label mb-2">Tentang Kami</div>
+        <h3 class="display-modern h2 mb-3">{% if profil %}{{ profil.nama }}{% else %}Perguruan SIMA{% endif %}</h3>
+        <p style="color:var(--muted); font-weight:500; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;">{{ profil.tentang|default:"Pembinaan atlet multicabor yang terstruktur. Data dikelola transparan untuk pelatih, atlet, dan jurnalis." }}</p>
+        {% if profil.visi %}<div class="p-3 mt-4" style="background:var(--stone); border-radius:16px; border:1px solid var(--line);"><div class="small-caps">Visi</div><div class="small mt-1" style="font-weight:600;">{{ profil.visi|truncatechars:140 }}</div></div>{% endif %}
+        <a href="{% url 'tentang' %}" class="btn btn-ghost btn-pill btn-sm mt-4">Selengkapnya</a>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card-minimal p-4 h-100">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">Prestasi</h5>
+          <a href="{% url 'prestasi-public' %}" class="small" style="color:var(--accent); font-weight:700; text-decoration:none;">Lihat semua →</a>
+        </div>
+        {% if top_prestasi %}
+        <div class="d-flex flex-column gap-3">
+          {% for p in top_prestasi %}
+          <div class="d-flex gap-3 align-items-center p-3" style="background:var(--stone); border-radius:16px; border:1px solid var(--line);">
+            <div class="flex-shrink-0" style="width:10px; height:10px; border-radius:50%; background:var(--accent);"></div>
+            <div><div class="small" style="font-weight:700;">{{ p.hasil }} — {{ p.nama_kejuaraan|truncatechars:32 }}</div><div class="small" style="color:var(--muted); font-weight:600;">{{ p.tahun }} · {{ p.atlet.nama_lengkap }}</div></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="small mb-0" style="color:var(--muted); font-weight:600;">Belum ada prestasi tercatat.</p>{% endif %}
+        <div class="hairline my-4"></div>
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="small-caps">Top Atlet</div>
+          <span class="small" style="color:var(--muted); font-weight:600;">Rata-rata</span>
+        </div>
+        <div class="mt-2">
+          {% for t in top_atlet %}<div class="d-flex justify-content-between py-2 border-bottom small" style="border-color:var(--line)!important"><span style="font-weight:600;">{{ t.atlet__nama_lengkap }}</span><span style="font-weight:800;">{{ t.rata|floatformat:1 }}</span></div>{% empty %}<div class="small" style="color:var(--muted); font-weight:600;">Belum ada penilaian.</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Kontak — ganti jadwal sebagai halaman publik -->
+<section class="container">
+  <div class="card-minimal p-0 overflow-hidden">
+    <div class="row g-0">
+      <div class="col-lg-6 p-5">
+        <div class="section-label mb-2">Hubungi Kami</div>
+        <h2 class="display-modern h2 mb-3">Kontak perguruan</h2>
+        <p class="mb-4" style="color:var(--muted); font-weight:500; max-width:46ch;">Jadwal latihan detail tersedia setelah login. Untuk informasi pendaftaran, alamat, dan pertanyaan umum — hubungi kami.</p>
+        <div class="d-flex flex-column gap-3">
+          <div class="d-flex gap-3 align-items-start"><div class="shape-soft flex-shrink-0" style="width:44px; height:44px; background:var(--stone); border:1px solid var(--line); display:grid; place-items:center; font-weight:800;">A</div><div><div style="font-weight:700;">Alamat</div><div class="small" style="color:var(--muted); font-weight:500;">{% if profil and profil.alamat %}{{ profil.alamat }}{% else %}Alamat belum diisi — kelola via Profil Perguruan{% endif %}</div></div></div>
+          <div class="d-flex gap-3 align-items-start"><div class="shape-soft flex-shrink-0" style="width:44px; height:44px; background:var(--stone); border:1px solid var(--line); display:grid; place-items:center; font-weight:800;">T</div><div><div style="font-weight:700;">Telepon / WA</div><div class="small" style="color:var(--muted); font-weight:500;">{{ profil.kontak|default:"Belum diisi" }}</div></div></div>
+          <div class="d-flex gap-3 align-items-start"><div class="shape-soft flex-shrink-0" style="width:44px; height:44px; background:var(--primary-ink); color:#fff; display:grid; place-items:center; font-weight:800;">E</div><div><div style="font-weight:700;">Email</div><div class="small" style="color:var(--muted); font-weight:500;">info@sima.local</div></div></div>
+        </div>
+        <a href="{% url 'kontak' %}" class="btn btn-ink btn-pill mt-4">Buka halaman kontak</a>
+      </div>
+      <div class="col-lg-6 p-5" style="background:var(--stone); border-left:1px solid var(--line)">
+        <div style="font-weight:800; font-family:'Outfit',sans-serif;">Kirim pesan cepat</div>
+        <p class="small mt-2" style="color:var(--muted); font-weight:500;">Form lengkap ada di halaman kontak. Pesan masuk akan terlihat di admin.</p>
+        <div class="card-minimal p-4 mt-3">
+          <div class="small" style="color:var(--muted); font-weight:600;">Agenda terdekat (internal)</div>
+          {% for a in agenda %}<div class="py-2 border-bottom small" style="border-color:var(--line)!important; font-weight:600;">{{ a.nama }} <span style="color:var(--muted);">· {{ a.tanggal_mulai }} · {{ a.lokasi }}</span></div>{% empty %}<p class="small" style="color:var(--muted);">Belum ada agenda.</p>{% endfor %}
+          <a href="{% url 'kontak' %}" class="small mt-3 d-inline-block" style="color:var(--accent); font-weight:700; text-decoration:none;">Hubungi kami →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

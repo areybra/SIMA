@@ -1,0 +1,25 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Kesiapan — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+  <div>
+    <div class="small-caps">Pelatih</div>
+    <h3 class="mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">Penilaian Kesiapan</h3>
+    <p class="small mb-0" style="color:var(--muted); font-weight:500;">Fisik · Teknik · Mental · VO₂Max · BB/TB</p>
+  </div>
+  <a href="{% url 'penilaian-create' %}" class="btn btn-ink btn-pill">+ Input Penilaian</a>
+</div>
+<form class="row g-2 mb-4" method="get">
+  <div class="col-md-6"><select name="atlet" class="form-select shape-pill" style="border-radius:999px;"><option value="">Semua atlet</option>{% for a in atlet_list %}<option value="{{ a.id }}" {% if atlet_id == a.id|stringformat:'s' %}selected{% endif %}>{{ a.nama_lengkap }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><button class="btn btn-ghost btn-pill w-100">Filter</button></div>
+</form>
+<div class="card-minimal p-0 overflow-hidden"><div class="table-responsive"><table class="table mb-0 small align-middle">
+  <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Tanggal</th><th style="font-weight:800;">Atlet</th><th style="font-weight:800;">F/T/M</th><th style="font-weight:800;">VO₂Max</th><th style="font-weight:800;">Status</th><th></th></tr></thead>
+  <tbody>{% for o in object_list %}<tr>
+    <td style="font-weight:600;">{{ o.tanggal }}</td><td><div class="d-flex gap-2 align-items-center">{% if o.atlet.foto %}<img src="{{ o.atlet.foto.url }}" style="width:32px; height:32px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">{% else %}<div style="width:32px; height:32px; border-radius:10px; background:var(--stone); border:1px solid var(--line); display:grid; place-items:center; font-weight:800; font-size:.75rem; color:var(--muted);">{{ o.atlet.nama_lengkap|slice:":1"|upper }}</div>{% endif %}<span style="font-weight:600;">{{ o.atlet.nama_lengkap }}</span></div></td><td style="font-weight:600;">{{ o.fisik }}/{{ o.teknik }}/{{ o.mental }} <span style="color:var(--muted);">({{ o.rata_rata }})</span></td>
+    <td style="font-weight:500;">{{ o.vo2max|default:'-' }}</td>
+    <td><span class="shape-pill px-2 py-1 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ o.status }}</span>{% if o.ada_cedera %}<span class="shape-pill px-2 py-1 small ms-1" style="background:#FEE2E2; border:1px solid #FECACA; color:#DC2626; font-weight:700;">Cedera</span>{% endif %}</td>
+    <td class="text-nowrap"><a href="{% url 'penilaian-update' o.id %}" class="btn btn-ghost btn-pill btn-sm">Ubah</a> <a href="{% url 'penilaian-delete' o.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a></td>
+  </tr>{% empty %}<tr><td colspan="6" class="p-5 text-center" style="color:var(--muted); font-weight:600;">Belum ada data.</td></tr>{% endfor %}</tbody>
+</table></div></div>
+{% endblock %}

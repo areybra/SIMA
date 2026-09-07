@@ -1,0 +1,7 @@
+Django>=5,<6
+django-jazzmin
+psycopg2-binary
+PyMySQL
+python-dotenv
+whitenoise
+Pillow

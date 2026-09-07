@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block navbar %}{% endblock %}
+{% block content %}
+<!-- Dashboard top bar — pengganti navbar (hanya mobile, floating menu) -->
+<div class="d-lg-none sticky-top" style="background:var(--surface); backdrop-filter:blur(14px); border-bottom:1px solid var(--line); z-index:1030;">
+  <div class="container-fluid d-flex align-items-center justify-content-between px-3 py-2">
+    <a href="/" class="d-flex align-items-center gap-2 text-decoration-none">
+      {% if perguruan_global and perguruan_global.logo %}
+        <img src="{{ perguruan_global.logo.url }}" alt="Logo {{ perguruan_global.nama }}" style="width:34px; height:34px; object-fit:cover; border-radius:11px; border:1px solid var(--line);">
+      {% else %}
+        <span class="brand-mark" style="width:34px; height:34px; font-size:.9rem;">S</span>
+      {% endif %}
+      <span style="font-family:'Outfit',sans-serif; font-weight:800; color:var(--primary-ink); letter-spacing:-.02em;">SIMA</span>
+      <span class="d-none d-sm-inline" style="font-family:'Space Grotesk',sans-serif; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);">Dashboard</span>
+    </a>
+    <div class="d-flex align-items-center gap-2">
+      <button class="themeToggleBtn" type="button" aria-label="Toggle dark mode" title="Dark mode"><span class="themeTrack"><span class="themeDot"></span></span></button>
+      {% if user.is_authenticated and user.atlet_profile and user.atlet_profile.foto %}
+        <img src="{{ user.atlet_profile.foto.url }}" alt="{{ user.atlet_profile.nama_lengkap }}" style="width:34px; height:34px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">
+      {% endif %}
+      <button class="btn btn-ghost btn-pill" type="button" data-bs-toggle="offcanvas" data-bs-target="#dashOffcanvas" aria-controls="dashOffcanvas" style="min-height:38px; padding:.45rem .9rem; font-weight:700; border-radius:999px;">
+        ☰ Menu
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating offcanvas menu — tidak menimpa section (overlay, bukan push) -->
+<div class="offcanvas offcanvas-start d-lg-none" tabindex="-1" id="dashOffcanvas" aria-labelledby="dashOffcanvasLabel" style="width:320px; max-width:86vw; background:var(--surface); border-right:1px solid var(--line);">
+  <div class="offcanvas-header" style="border-bottom:1px solid var(--line); padding:16px 20px;">
+    <div class="d-flex gap-2 align-items-center">
+      {% if perguruan_global and perguruan_global.logo %}
+        <img src="{{ perguruan_global.logo.url }}" alt="Logo" style="width:38px; height:38px; object-fit:cover; border-radius:12px; border:1px solid var(--line);">
+      {% else %}
+        <div style="width:38px; height:38px; border-radius:12px; background:var(--primary-ink); color:#fff; display:grid; place-items:center; font-family:'Outfit',sans-serif; font-weight:800;">S</div>
+      {% endif %}
+      <div>
+        <div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:.95rem; line-height:1;">{% if perguruan_global %}{{ perguruan_global.nama|truncatechars:18 }}{% else %}SIMA{% endif %}</div>
+        <div class="small" style="color:var(--muted); font-weight:600; font-size:.7rem;">Dashboard</div>
+      </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body p-4" style="overflow-y:auto;">
+    {% if user.is_authenticated and user.atlet_profile and user.atlet_profile.foto %}
+      <div class="d-flex gap-2 align-items-center mb-3 p-2" style="background:var(--stone); border:1px solid var(--line); border-radius:14px;">
+        <img src="{{ user.atlet_profile.foto.url }}" style="width:36px; height:36px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">
+        <div><div style="font-weight:700; font-size:.85rem;">{{ user.atlet_profile.nama_lengkap|truncatechars:14 }}</div><div class="small" style="color:var(--muted); font-weight:600;">{{ user.username }}</div></div>
+      </div>
+    {% endif %}
+    <div class="nav flex-column nav-pills gap-2 sidebar-minimal">
+      {% if user.role == 'atlet' and not user.is_superuser %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-atlet' %}active{% endif %}" href="{% url 'dashboard-atlet' %}">Data Saya</a>
+        <a class="nav-link {% if 'dokumen' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'dokumen-saya-list' %}">Dokumen Saya</a>
+      {% elif user.role == 'jurnalis' and not user.is_superuser %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-jurnalis' %}active{% endif %}" href="{% url 'dashboard-jurnalis' %}">Overview Jurnalis</a>
+        <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
+        <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+      {% else %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-pelatih' %}active{% endif %}" href="{% url 'dashboard-pelatih' %}">Overview</a>
+        <a class="nav-link" href="{% url 'atlet-list' %}">Atlet</a>
+        <a class="nav-link" href="{% url 'penilaian-list' %}">Kesiapan</a>
+        <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+        <a class="nav-link" href="{% url 'jadwal-list' %}">Jadwal &amp; Event</a>
+        <a class="nav-link" href="{% url 'cabor-list' %}">Cabor</a>
+        <a class="nav-link" href="{% url 'dokumen-list' %}">Dokumen Atlet</a>
+        <a class="nav-link" href="{% url 'profil-perguruan' %}">Profil Perguruan</a>
+        {% if user.is_superuser or user.role == 'admin' %}
+        <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
+        {% endif %}
+      {% endif %}
+      <div class="hairline my-2"></div>
+      <a class="nav-link" href="/">Landing</a>
+      <a class="nav-link" href="{% url 'berita-list' %}">Berita Publik</a>
+      <form method="post" action="{% url 'logout' %}" class="d-grid mt-2">{% csrf_token %}<button class="btn btn-ghost btn-pill" style="min-height:44px; font-weight:700;">Keluar ({{ user.username }})</button></form>
+    </div>
+  </div>
+</div>
+
+<div class="container-fluid py-4 py-lg-5">
+  <div class="row g-4">
+    <!-- Desktop sidebar — static, tidak floating -->
+    <div class="col-lg-2 d-none d-lg-block">
+      <div class="card-minimal p-4 sidebar-minimal sticky-top" style="top:20px;">
+        <div class="d-flex gap-2 align-items-center mb-3">
+          {% if perguruan_global and perguruan_global.logo %}
+            <img src="{{ perguruan_global.logo.url }}" alt="Logo" style="width:38px; height:38px; object-fit:cover; border-radius:12px; border:1px solid var(--line);">
+          {% else %}
+            <div style="width:38px; height:38px; border-radius:12px; background:var(--primary-ink); color:#fff; display:grid; place-items:center; font-family:'Outfit',sans-serif; font-weight:800;">S</div>
+          {% endif %}
+          <div><div style="font-family:'Outfit',sans-serif; font-weight:800; font-size:.9rem; line-height:1;">{% if perguruan_global %}{{ perguruan_global.nama|truncatechars:16 }}{% else %}SIMA{% endif %}</div><div class="small" style="color:var(--muted); font-weight:600; font-size:.7rem;">Dashboard</div></div>
+        </div>
+        {% if user.is_authenticated and user.atlet_profile and user.atlet_profile.foto %}
+          <div class="d-flex gap-2 align-items-center mb-3 p-2" style="background:var(--stone); border:1px solid var(--line); border-radius:14px;">
+            <img src="{{ user.atlet_profile.foto.url }}" style="width:36px; height:36px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">
+            <div><div style="font-weight:700; font-size:.85rem;">{{ user.atlet_profile.nama_lengkap|truncatechars:14 }}</div><div class="small" style="color:var(--muted); font-weight:600;">{{ user.username }}</div></div>
+          </div>
+        {% endif %}
+        <div class="small-caps mb-3">Menu</div>
+        <div class="nav flex-column nav-pills gap-2">
+          {% if user.role == 'atlet' and not user.is_superuser %}
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-atlet' %}active{% endif %}" href="{% url 'dashboard-atlet' %}">Data Saya</a>
+            <a class="nav-link {% if 'dokumen' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'dokumen-saya-list' %}">Dokumen Saya</a>
+          {% elif user.role == 'jurnalis' and not user.is_superuser %}
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-jurnalis' %}active{% endif %}" href="{% url 'dashboard-jurnalis' %}">Overview Jurnalis</a>
+            <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
+            <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+          {% else %}
+            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-pelatih' %}active{% endif %}" href="{% url 'dashboard-pelatih' %}">Overview</a>
+            <a class="nav-link" href="{% url 'atlet-list' %}">Atlet</a>
+            <a class="nav-link" href="{% url 'penilaian-list' %}">Kesiapan</a>
+            <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+            <a class="nav-link" href="{% url 'jadwal-list' %}">Jadwal &amp; Event</a>
+            <a class="nav-link" href="{% url 'cabor-list' %}">Cabor</a>
+            <a class="nav-link" href="{% url 'dokumen-list' %}">Dokumen Atlet</a>
+            <a class="nav-link" href="{% url 'profil-perguruan' %}">Profil Perguruan</a>
+            {% if user.is_superuser or user.role == 'admin' %}
+            <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
+            {% endif %}
+          {% endif %}
+          <div class="hairline my-2"></div>
+          <a class="nav-link" href="/">Landing</a>
+          <a class="nav-link" href="{% url 'berita-list' %}">Berita Publik</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-10">{% block dash %}{% endblock %}</div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Dokumen Atlet — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+  <div>
+    <div class="small-caps">{% if is_admin_view %}Admin / Pelatih{% else %}Atlet{% endif %}</div>
+    <h3 class="mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">Dokumen Atlet</h3>
+    <p class="small mb-0" style="color:var(--muted); font-weight:500;">Label bebas: KTP, KK, Akta, Ijazah, Surat Kesehatan, dll.</p>
+  </div>
+  {% if is_admin_view %}
+    <a href="{% url 'dokumen-create' %}" class="btn btn-ink btn-pill">+ Upload Dokumen</a>
+  {% else %}
+    <a href="{% url 'dokumen-saya-create' %}" class="btn btn-ink btn-pill">+ Upload Dokumen Saya</a>
+  {% endif %}
+</div>
+
+{% if is_admin_view %}
+<form class="row g-2 mb-4" method="get">
+  <div class="col-md-5"><input name="q" value="{{ q }}" class="form-control shape-pill" style="border-radius:999px; border-color:var(--line);" placeholder="Cari label/nama atlet..."></div>
+  <div class="col-md-4"><select name="atlet" class="form-select shape-pill" style="border-radius:999px; border-color:var(--line);"><option value="">Semua atlet</option>{% for a in atlet_list %}<option value="{{ a.id }}" {% if atlet_id == a.id|stringformat:"s" %}selected{% endif %}>{{ a.nama_lengkap }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><button class="btn btn-ghost btn-pill w-100">Filter</button></div>
+</form>
+{% endif %}
+
+<div class="card-minimal p-0 overflow-hidden">
+  <div class="table-responsive"><table class="table mb-0 small align-middle">
+    <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Label</th><th style="font-weight:800;">Atlet</th><th style="font-weight:800;">File</th><th style="font-weight:800;">Tanggal</th><th></th></tr></thead>
+    <tbody>
+      {% for d in object_list %}<tr>
+        <td><span class="shape-pill px-3 py-1" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">{{ d.label }}</span>{% if d.keterangan %}<div class="small" style="color:var(--muted); font-weight:500;">{{ d.keterangan|truncatechars:48 }}</div>{% endif %}</td>
+        <td><div class="d-flex gap-2 align-items-center">{% if d.atlet.foto %}<img src="{{ d.atlet.foto.url }}" style="width:32px; height:32px; object-fit:cover; border-radius:10px; border:1px solid var(--line);">{% else %}<div style="width:32px; height:32px; border-radius:10px; background:var(--stone); border:1px solid var(--line); display:grid; place-items:center; font-weight:800; font-size:.75rem; color:var(--muted);">{{ d.atlet.nama_lengkap|slice:":1"|upper }}</div>{% endif %}<span style="font-weight:600;">{{ d.atlet.nama_lengkap }}</span></div></td>
+        <td><a href="{{ d.file.url }}" target="_blank" class="small" style="color:var(--accent); font-weight:700;">Lihat file</a><div class="small" style="color:var(--muted); font-weight:500;">{{ d.file.name|slice:":28" }}</div></td>
+        <td class="small" style="color:var(--muted); font-weight:600;">{{ d.created_at|date:"d M Y" }}<br>{{ d.uploaded_by.username|default:"-" }}</td>
+        <td class="text-nowrap">
+          {% if is_admin_view %}
+            <a href="{% url 'dokumen-delete' d.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a>
+          {% else %}
+            <a href="{% url 'dokumen-saya-delete' d.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a>
+          {% endif %}
+        </td>
+      </tr>{% empty %}<tr><td colspan="5" class="p-5 text-center" style="color:var(--muted)">Belum ada dokumen. Upload dengan label sesuai kebutuhan (KTP/KK/Akta dll).</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

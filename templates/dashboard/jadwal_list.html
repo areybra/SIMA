@@ -1,0 +1,31 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Jadwal & Event — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-2 align-items-end justify-content-between mb-4">
+  <div>
+    <div class="small-caps">Jadwal</div>
+    <h3 class="mb-1" style="font-family:'Outfit',sans-serif; font-weight:800;">Jadwal &amp; Event</h3>
+    <p class="small mb-0" style="color:var(--muted); font-weight:500;">Atur sesi rutin dan agenda.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'jadwal-create' %}" class="btn btn-ink btn-pill btn-sm">+ Jadwal</a>
+    <a href="{% url 'event-create' %}" class="btn btn-ghost btn-pill btn-sm">+ Event</a>
+  </div>
+</div>
+<div class="row g-4">
+<div class="col-lg-7"><div class="card-minimal p-0 overflow-hidden">
+  <div class="p-4 border-bottom" style="border-color:var(--line)!important; font-weight:800; font-family:'Outfit',sans-serif;">Jadwal Latihan Rutin</div>
+  <div class="table-responsive"><table class="table mb-0 small align-middle">
+    <thead style="background:var(--stone)"><tr><th style="font-weight:800;">Hari</th><th style="font-weight:800;">Jam</th><th style="font-weight:800;">Cabor</th><th style="font-weight:800;">Lokasi</th><th></th></tr></thead>
+    <tbody>{% for j in jadwal %}<tr><td style="font-weight:700;"><span class="shape-pill px-2 py-1 small" style="background:var(--surface); border:1px solid var(--line); font-weight:700;">{{ j.hari }}</span></td><td style="font-weight:600;">{{ j.jam_mulai }}–{{ j.jam_selesai }}</td><td style="font-weight:600;">{{ j.cabor.nama|default:'Umum' }}</td><td style="font-weight:500;">{{ j.lokasi }}</td>
+    <td class="text-nowrap"><a href="{% url 'jadwal-update' j.id %}" class="btn btn-ghost btn-pill btn-sm">Ubah</a> <a href="{% url 'jadwal-delete' j.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a></td></tr>
+    {% empty %}<tr><td colspan="5" class="p-5 text-center" style="color:var(--muted); font-weight:600;">Belum ada jadwal.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div></div>
+<div class="col-lg-5"><div class="card-minimal p-5">
+  <div class="mb-3" style="font-weight:800; font-family:'Outfit',sans-serif;">Agenda / Event</div>
+  {% for a in agenda %}<div class="py-3 border-bottom" style="border-color:var(--line)!important"><div class="small" style="font-weight:800;">{{ a.nama }}</div><div class="small" style="color:var(--muted); font-weight:600;">{{ a.get_jenis_display }} · {{ a.tanggal_mulai }} · {{ a.lokasi }}</div><div class="mt-2"><a href="{% url 'event-update' a.id %}" class="btn btn-ghost btn-pill btn-sm">Ubah</a> <a href="{% url 'event-delete' a.id %}" class="btn btn-ghost btn-pill btn-sm" style="color:#DC2626; border-color:#FECACA;">Hapus</a></div></div>
+  {% empty %}<p class="small" style="color:var(--muted); font-weight:600;">Belum ada agenda.</p>{% endfor %}
+</div></div>
+</div>
+{% endblock %}
