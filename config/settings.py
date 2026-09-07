@@ -108,7 +108,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Jika DATABASE_URL diisi, ia diprioritaskan. Saat deploy Vercel/Railway, otomatis
 # fallback ke Railway URL di bawah jika env tidak di-set — jadi langsung connect tanpa set manual.
 # Juga handle Vercel Postgres integration vars: POSTGRES_URL, POSTGRES_PRISMA_URL
-_RAILWAY_FALLBACK_URL = "postgresql://postgres:yQoeYmoEyoAIqkoSdmcAPYrqEsdMoytO@thomas.proxy.rlwy.net:24876/sima"
+# Supabase pooler (IPv4, Vercel-friendly) — direct db.*.supabase.co hanya IPv6 -> Cannot assign requested address di Vercel
+_SUPABASE_POOLER_URL = "postgresql://postgres.mchmxwxjrlyywutbrppj:radjawali2009%21@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require"
+_RAILWAY_FALLBACK_URL = _SUPABASE_POOLER_URL
 # Cek beberapa nama env var yang umum di Vercel/Railway
 for _k in ('DATABASE_URL', 'POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'POSTGRES_URL_NON_POOLING'):
     _v = env(_k, '').strip().strip('"').strip("'")
@@ -124,6 +126,21 @@ if not DATABASE_URL:
 
 # Bersihkan URL dari spasi/quotes yang sering ter-copy dari dashboard
 DATABASE_URL = DATABASE_URL.strip().strip('"').strip("'").strip()
+# Auto-fix: direct Supabase db.*.supabase.co (IPv6-only) -> pooler (IPv4) agar tidak "Cannot assign requested address" di Vercel
+# Jika user set DATABASE_URL=postgresql://postgres:pass@db.mchmxwxjrlyywutbrppj.supabase.co:5432/postgres -> rewrite ke pooler
+if DATABASE_URL and 'db.mchmxwxjrlyywutbrppj.supabase.co' in DATABASE_URL:
+    # preserve password & db, ganti host/user/port ke pooler
+    from urllib.parse import urlparse, unquote
+
+    _tmp = urlparse(DATABASE_URL)
+    _pwd = unquote(_tmp.password or 'radjawali2009!')
+    # pooler butuh user postgres.<project_ref>
+    _pooler_user = 'postgres.mchmxwxjrlyywutbrppj'
+    # encode ! sebagai %21 jika perlu
+    from urllib.parse import quote as _quote
+
+    _pwd_enc = _quote(_pwd, safe='')
+    DATABASE_URL = f"postgresql://{_pooler_user}:{_pwd_enc}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require"
 # Fix umum: URL tanpa // setelah scheme (mis. postgresql:postgres:... ) -> tambahkan //
 if DATABASE_URL and '://' not in DATABASE_URL and DATABASE_URL.count(':') >= 1:
     # Jika terlihat seperti postgres:postgres:pass@host... -> perbaiki
