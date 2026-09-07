@@ -108,6 +108,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # CATATAN: Hanya mendukung MySQL/MariaDB. PostgreSQL TIDAK didukung.
 DATABASE_URL = env('DATABASE_URL', '').strip().strip('"').strip("'").strip()
 
+# Gunakan PyMySQL sebagai drop-in replacement untuk mysqlclient (pure Python, no compile)
+# mysqlclient butuh build C dengan libmysqlclient yang tidak tersedia di Vercel
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 # Logika database: DATABASE_URL diprioritaskan, jika kosong pakai DB_ENGINE
 if not DATABASE_URL:
     DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
