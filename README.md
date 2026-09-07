@@ -1,70 +1,224 @@
-# SIMA — Sistem Interaktif Manajemen Atlet
+<p align="center">
+  <img src="https://via.placeholder.com/120x120.png?text=SIMA" alt="SIMA Logo" width="96" height="96" style="border-radius:20px"/>
+</p>
 
-Fullstack Django (template) untuk mengelola data atlet, kesiapan, prestasi, jadwal, berita, dan dokumen.
+<h1 align="center">SIMA — Sistem Interaktif Manajemen Atlet</h1>
 
-## Fitur Utama
-- **Landing** modern non-klasik: hero, KPI, berita featured (kategori + views + cover), tentang/visi, prestasi top, kontak teaser — **tidak ada teks keluar layout** (`overflow-wrap: anywhere`, `max-width:100%`, `min-width:0` di `base.html`)
-- **Tentang / Berita / Prestasi / Kontak** publik — Berita pakai **kategori** (umum/latihan/prestasi/event/pengumuman), **rich text** Quill (heading/bold/italic/list/link/image → HTML `|safe`), **views** auto +1 tiap buka detail
-- **Kontak** publik gantikan **Jadwal** di landing — form `nama/email/subjek/pesan` → `ContactMessage` (admin/jazzmin inbox); jadwal tetap internal di dashboard
-- **Dark mode** global — toggle 🌙/☀️ di navbar (publik) & top bar dashboard, `html.dark` CSS variables, persist `localStorage:sima-theme`, hormati `prefers-color-scheme`, anti-FOUC via inline script di `<head>`
-- **Auth 4 role** — `admin` (superuser), `pelatih`, `jurnalis`, `atlet` (`CustomUser.role`), tanpa registrasi publik; `/admin/` (Jazzmin) tidak di-link di UI (akses langsung)
-- **Dashboard tanpa navbar** — top bar `d-lg-none sticky-top` pengganti navbar di mobile, menu **floating offcanvas** (`#dashOffcanvas` `offcanvas-start`) overlay, tidak mendorong konten; desktop sidebar `col-lg-2 d-none d-lg-block sticky-top`
-- **Atlet**: view-only + upload **dokumen berlabel** (KTP/KK/Akta/Ijazah bebas); foto profil tampil di `atlet_list`, `penilaian`, `prestasi`, `dokumen`, dashboard
-- **Jurnalis**: CRUD **berita** (rich text + kategori + views) & **prestasi**; `views` tampil di list/detail
-- **Pelatih**: CRUD atlet, **kesiapan** (fisik/teknik/mental/VO2Max/BB/TB/kehadiran/cedera), prestasi, jadwal/event, dokumen, cabor, profil perguruan
-- **Logo perguruan** global via `context_processor` (`perguruan_global`) — navbar, footer, sidebar, tentang
-- **Footer full-bleed** (`width:100vw; margin-left:calc(50% - 50vw)`)
+<p align="center">
+  <strong>Fullstack Django untuk pembinaan atlet yang terstruktur, transparan, dan modern.</strong><br/>
+  Kelola biodata, kesiapan (Fisik/Teknik/Mental/VO₂Max), prestasi, jadwal, berita rich-text, dan dokumen — dengan 4 role & dark mode global.
+</p>
 
-## Tech Stack
-- Django 5.x + Template, Bootstrap 5.3.3, Chart.js 4.4.1, Quill 1.3.7, Google Fonts (Outfit + Plus Jakarta Sans + Space Grotesk)
-- DB: **SQLite** (dev) ↔ **Postgres/Supabase** (`psycopg2-binary`) ↔ **MySQL/MariaDB** (`PyMySQL`) via `.env:DB_ENGINE`
-- `python-dotenv`, `whitenoise`, `Pillow`
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.0.1-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+  <img src="https://img.shields.io/badge/Django-5.x-092E20?style=flat-square&logo=django&logoColor=white" alt="Django"/>
+  <img src="https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white" alt="Bootstrap"/>
+  <img src="https://img.shields.io/badge/PostgreSQL-Supabase-4169E1?style=flat-square&logo=postgresql&logoColor=white" alt="Postgres"/>
+  <img src="https://img.shields.io/badge/MySQL-8%2F8-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL"/>
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
+  <br/>
+  <sub>Template-only (no SPA) • SQLite dev → Postgres/MySQL prod • Jazzmin Admin • Mobile-first • v0.0.1</sub>
+</p>
 
-## Struktur Penting
+---
+
+## 📑 Daftar Isi
+- [✨ Fitur Utama](#-fitur-utama)
+- [🛠 Tech Stack](#-tech-stack)
+- [📁 Struktur Project](#-struktur-project)
+- [🚀 Quick Start](#-quick-start)
+- [⚙️ Environment (.env)](#️-environment-env)
+- [🗄️ Database — SQLite / Postgres / MySQL](#️-database--sqlite--postgres--mysql)
+- [👥 Role & Hak Akses](#-role--hak-akses)
+- [🎨 Dark Mode & Responsive](#-dark-mode--responsive)
+- [🧪 Verifikasi](#-verifikasi)
+- [📸 Preview](#-preview)
+- [📄 Dokumen Terkait](#-dokumen-terkait)
+
+---
+
+## ✨ Fitur Utama
+
+| Area | Detail |
+|------|--------|
+| **Landing modern** | Hero + KPI (Atlet/Cabor/Prestasi/Jadwal), Berita featured (kategori + views + cover), Tentang/Prestasi ringkas, Kontak teaser — `overflow-wrap:anywhere` anti teks keluar layout |
+| **Publik** | `/tentang`, `/berita` (filter kategori/q), `/berita/<slug>` (rich HTML `|safe` + views + terkait), `/prestasi` (filter cabor/tingkat), `/kontak` (form → `ContactMessage` inbox admin) |
+| **Berita** | Kategori `umum/latihan/prestasi/event/pengumuman`, **Quill rich text** (heading/bold/italic/list/link/image), `views` auto +1 tiap buka, `is_published/is_featured` |
+| **Kontak** | Gantikan Jadwal di landing; jadwal tetap internal di dashboard |
+| **Dark mode** | Toggle minimal (track/dot, tanpa ikon berlebihan) di navbar & dashboard top bar; `html.dark` CSS variables; `localStorage:sima-theme` + `prefers-color-scheme`; warna adaptif (tidak tertimpa/invisible) |
+| **Auth 4 role** | `admin` (Jazzmin), `pelatih`, `jurnalis`, `atlet` — tanpa registrasi publik; `/admin/` tidak di-link di UI |
+| **Dashboard** | **Tanpa navbar** — top bar mobile `d-lg-none sticky-top` + menu **floating offcanvas** (overlay, tidak mendorong konten); desktop `sidebar sticky-top` |
+| **Dokumen atlet** | Berlabel bebas (KTP/KK/Akta/Ijazah); admin/pelatih kelola semua, atlet kelola milik sendiri (`atlet` dikunci) |
+| **Branding global** | `perguruan_global` context processor — logo tampil di navbar, footer, sidebar, tentang, plus foto atlet di semua list |
+| **Jadwal & Kesiapan** | Jadwal mingguan + agenda; penilaian fisik/teknik/mental/VO₂Max/BB/TB/kehadiran/cedera |
+
+---
+
+## 🛠 Tech Stack
+
+| Lapisan | Teknologi |
+|---------|-----------|
+| **Fullstack** | Django 5.2 + Django Template (no DRF/SPA) |
+| **UI** | Bootstrap 5.3.3, Chart.js 4.4.1, Quill 1.3.7, Google Fonts (Outfit + Plus Jakarta Sans + Space Grotesk) |
+| **Admin** | `django-jazzmin` 3.0 |
+| **DB** | SQLite (dev) ↔ Postgres/Supabase (`psycopg2-binary`) ↔ MySQL/MariaDB (`PyMySQL`) via `DB_ENGINE` |
+| **Lain** | `python-dotenv`, `whitenoise`, `Pillow` |
+
+---
+
+## 📁 Struktur Project
+
 ```
-config/settings.py  # DB switch sqlite/postgres/mysql, jazzmin, static/media
-apps/accounts       # CustomUser (admin/pelatih/jurnalis/atlet)
-apps/atlets         # Cabor, PerguruanProfil, AtletProfile, Prestasi, DokumenAtlet
-apps/kesiapan       # PenilaianKesiapan
-apps/jadwal         # JadwalLatihan, AgendaEvent
-apps/landing        # Berita (kategori/views/richtext), ContactMessage, context_processor perguruan
-apps/dashboard      # router + 3 dashboards + CRUD
-templates/base.html # overflow fix + dark mode + navbar block + offcanvas
-templates/landing/* # home, tentang, berita_list/detail (rich-content), prestasi, kontak
-templates/dashboard/layout.html # top bar mobile + offcanvas floating + desktop sidebar
+SIMA/
+├── config/              # settings (DB switch), urls, wsgi
+├── apps/
+│   ├── accounts/        # CustomUser: admin/pelatih/jurnalis/atlet
+│   ├── atlets/          # Cabor, PerguruanProfil, AtletProfile, Prestasi, DokumenAtlet
+│   ├── kesiapan/        # PenilaianKesiapan
+│   ├── jadwal/          # JadwalLatihan, AgendaEvent
+│   ├── landing/         # Berita, ContactMessage, context_processors.perguruan
+│   └── dashboard/       # router + 3 dashboards + CRUD
+├── templates/
+│   ├── base.html        # anti-overflow + dark mode + navbar block
+│   ├── landing/         # home, tentang, berita_list/detail, prestasi, kontak
+│   └── dashboard/       # layout (offcanvas floating) + form-grid
+├── static/ media/ staticfiles/
+├── scripts/seed_demo.py
+├── .env.example         # template env profesional
+├── requirements.txt
+├── README.md / REQUIREMENT.md / project.md
+└── manage.py
 ```
 
-## Quick Start
+---
+
+## 🚀 Quick Start
+
 ```bash
+# 1. Clone & venv
+git clone https://github.com/areybra/SIMA.git
 cd SIMA
-python -m venv .venv && source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# 2. Install
 pip install -r requirements.txt
-cp .env.example .env   # default DB_ENGINE=sqlite langsung jalan
+
+# 3. Env (default sqlite langsung jalan)
+cp .env.example .env
+# Edit SECRET_KEY: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+
+# 4. DB & admin
 python manage.py migrate
-python manage.py createsuperuser  # atau python scripts/seed_demo.py
+python manage.py createsuperuser
+# atau seed demo (admin/admin123, pelatih1/pelatih123, jurnalis1/jurnalis123, atlet1/atlet123)
+python scripts/seed_demo.py
+
+# 5. Run
 python manage.py runserver
-# akun demo seed: admin/admin123, pelatih1/pelatih123, jurnalis1/jurnalis123, atlet1/atlet123
+# → http://127.0.0.1:8000
 ```
 
-## Environment (.env)
+---
+
+## ⚙️ Environment (.env)
+
+| Key | Contoh | Ket |
+|-----|--------|-----|
+| `SECRET_KEY` | `django-insecure-...` | Generate baru untuk production |
+| `DEBUG` | `True` / `False` | `False` di production |
+| `ALLOWED_HOSTS` | `127.0.0.1,localhost,example.com` | Domain production |
+| `DB_ENGINE` | `sqlite` / `postgres` / `mysql` | Pilih satu |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | — | Lihat `.env.example` |
+| `DB_SSLMODE` | `require` | Untuk Postgres/Supabase |
+| `DB_CONN_MAX_AGE` | `60` | Koneksi persisten |
+
+> `.env` di-ignore git. Selalu pakai `.env.example` sebagai acuan dan jangan commit secret production.
+
+---
+
+## 🗄️ Database — SQLite / Postgres / MySQL
+
 ```env
-SECRET_KEY=...
-DEBUG=True
-ALLOWED_HOSTS=127.0.0.1,localhost,testserver
-DB_ENGINE=sqlite  # sqlite | postgres | mysql
-# postgres: DB_HOST/PORT(5432/6543 pooler)/NAME/USER/PASSWORD/DB_SSLMODE
-# mysql: DB_HOST/PORT(3306)/NAME/USER/PASSWORD
+# Dev (tanpa server)
+DB_ENGINE=sqlite
+
+# Supabase / Postgres (pooler 6543 direkomendasikan)
+DB_ENGINE=postgres
+DB_HOST=db.xxxxx.supabase.co
+DB_PORT=6543
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=***
+DB_SSLMODE=require
+
+# MySQL / MariaDB
+DB_ENGINE=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_NAME=sima
+DB_USER=root
+DB_PASSWORD=***
 ```
 
-## Dark Mode
-- Toggle di navbar publik & dashboard top bar (🌙/☀️)
-- `html.dark` override CSS variables (`--paper:#0B1220`, `--surface:#162236`, etc.)
-- Persist `localStorage:sima-theme`, fallback `prefers-color-scheme`
-- Semua halaman terpengaruh (base variables dipakai nav/card/table/form/footer)
+Tanpa ganti kode — `config/settings.py` memilih engine dari `.env` (`pymysql.install_as_MySQLdb()` untuk MySQL).
 
-## Catatan Layout
-- `base.html` pakai `overflow-wrap:anywhere; word-break:break-word; min-width:0` untuk cegah teks panjang keluar card/grid
-- `berita_detail.html` pakai `.rich-content` (`|safe`) dengan style `h1-3, img, blockquote, a`
-- Dashboard `form.html` pakai `.form-grid` 2 kolom (1 kolom <768px) agar tidak memanjang
+---
 
-Lihat `REQUIREMENT.md` untuk daftar paket & `project.md` untuk detail model/URL.
+## 👥 Role & Hak Akses
+
+| Fitur | Admin | Pelatih | Jurnalis | Atlet |
+|-------|:-----:|:-------:|:--------:|:-----:|
+| `/admin/` (Jazzmin, tidak di-link) | ✅ | — | — | — |
+| Dashboard pelatih + atlet/kesiapan/jadwal/cabor/dokumen | ✅ | ✅ | — | — |
+| Dashboard jurnalis: berita & prestasi | ✅ | — | ✅ | — |
+| Dashboard atlet: data & dokumen sendiri | — | — | — | ✅ |
+| Landing publik | ✅ | ✅ | ✅ | ✅ |
+
+Atlet `atlet` dikunci ke `atlet_profile`; jurnalis hanya edit berita miliknya (admin bebas).
+
+---
+
+## 🎨 Dark Mode & Responsive
+
+- **Toggle** minimal track/dot (tanpa emoji) di navbar & dashboard top bar, `html.dark` override variabel (`--paper:#0B1220`, `--surface:#162236`), persist `sima-theme`.
+- **Floating offcanvas** `d-lg-none` di dashboard — overlay, tidak mendorong konten; desktop `col-lg-2 sticky-top`.
+- **Anti-overflow**: `overflow-wrap:anywhere`, `min-width:0`, `max-width:100%` untuk teks panjang & gambar 1200px.
+- **Form** `.form-grid` 2 kolom → 1 kolom <768px.
+
+---
+
+## 🧪 Verifikasi
+
+```bash
+python manage.py check
+python manage.py shell -c "from django.test import Client; print(Client().get('/').status_code)"
+# dark toggle ada?  -> 'themeToggleBtn' in html
+# overflow fix ada? -> 'overflow-wrap:anywhere' in base.html
+```
+
+---
+
+## 📸 Preview
+
+> Tambahkan screenshot `docs/screenshot-*.png` dan referensikan di sini setelah deploy.
+
+```
+docs/
+  screenshot-landing.png
+  screenshot-dashboard.png
+  screenshot-darkmode.png
+```
+
+---
+
+## 📄 Dokumen Terkait
+
+- `REQUIREMENT.md` — daftar paket, instalasi, switch DB
+- `project.md` — model ringkas & peta URL lengkap
+- `templates/` — komentar `overflow-wrap` & `html.dark`
+
+<p align="center">
+  <sub>Dibuat untuk pelatih & atlet — pembinaan yang rapi, transparan, dan siap produksi.</sub><br/>
+  <sub>© SIMA — Modern • Clear • Spacious • Dark-ready</sub>
+</p>
