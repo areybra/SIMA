@@ -38,7 +38,7 @@ tingkat kesiapannya hingga jadwal rutin latihan.
 | Desain    | UI Pro Max — Modern minimal non-klasik · Outfit + Plus Jakarta Sans/Space Grotesk · weight 500-800, line-height 1.75, spacing lega · shapes subtle blob/arch/pill |
 | Admin theme | django-jazzmin |
 | Database dev | SQLite (`db.sqlite3`) |
-| Database prod | Supabase Postgres via `psycopg2-binary` (switch lewat `.env`) |
+| Database prod | MySQL/MariaDB via `PyMySQL` (switch lewat `.env`) |
 | Config    | `python-dotenv` (`.env` / `.env.example`) |
 | Static prod | `whitenoise` |
 | Media upload | Pillow (`media/atlet/`, `media/prestasi/`, `media/perguruan/`, `media/dokumen/`, `media/berita/`) |
@@ -69,7 +69,7 @@ melihat halaman instruksi `atlet_noprofile.html`.
 SIMA/
 ├── manage.py
 ├── requirements.txt
-├── .env / .env.example      # switch SQLite <-> Supabase Postgres
+├── .env / .env.example      # switch SQLite <-> MySQL
 ├── db.sqlite3               # dev saja
 ├── config/
 │   ├── settings.py          # custom user, jazzmin, DB env, static/media, login URLs
@@ -156,12 +156,10 @@ cp .env.example .env            # default SQLite, langsung jalan
 Akun demo (ganti di production): `admin/admin123`, `pelatih1/pelatih123`,
 `jurnalis1/jurnalis123`, `atlet1/atlet123` (juga `atlet2`, `atlet3`). Admin link tidak ditampilkan di UI.
 
-## 9. Migrasi ke Supabase/Postgres
+## 9. Migrasi ke MySQL
 
-1. Buat project di Supabase → ambil connection string (disarankan **pooler,
-   port 6543** agar stabil untuk Django).
-2. Isi `.env`: `DB_ENGINE=postgres`, `DB_HOST`, `DB_PORT=6543`, `DB_NAME`,
-   `DB_USER`, `DB_PASSWORD`, `DB_SSLMODE=require`.
+1. Siapkan database MySQL/MariaDB (lokal/hosting) — host, port, database, user, password.
+2. Isi `.env`: `DB_ENGINE=mysql`, `DB_HOST`, `DB_PORT=3306`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
 3. `.venv/bin/python manage.py migrate` (+ `createsuperuser` bila DB kosong).
 Tanpa perubahan kode — `config/settings.py` memilih engine dari `.env`.
 

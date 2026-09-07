@@ -87,70 +87,25 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
-    'OPTIONS': {
-        'context_processors': [
-            'django.template.context_processors.request',
-            'django.contrib.auth.context_processors.auth',
-            'django.contrib.messages.context_processors.messages',
-            'apps.landing.context_processors.perguruan',
-        ],
-    },
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'apps.landing.context_processors.perguruan',
+            ],
+        },
     },
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# ---- Database: SQLite (dev) <-> Postgres / MySQL (prod) via .env ----
+# ---- Database: SQLite (dev) <-> MySQL (prod) via .env ----
 # Mendukung 2 cara:
-#   1) DATABASE_URL — satu baris URL (Railway/Supabase): postgres://user:pass@host:port/db
-#      Contoh Railway: postgresql://postgres:yQoeYmoE...@thomas.proxy.rlwy.net:24876/sima
+#   1) DATABASE_URL — satu baris URL: mysql://user:pass@host:port/db
 #   2) DB_ENGINE + DB_HOST/DB_PORT/... — terpisah (legacy)
-# Jika DATABASE_URL diisi, ia diprioritaskan. Saat deploy Vercel/Railway, otomatis
-# fallback ke Railway URL di bawah jika env tidak di-set — jadi langsung connect tanpa set manual.
-# Juga handle Vercel Postgres integration vars: POSTGRES_URL, POSTGRES_PRISMA_URL
-# Supabase pooler (IPv4, Vercel-friendly) — direct db.*.supabase.co hanya IPv6 -> Cannot assign requested address di Vercel
-_SUPABASE_POOLER_URL = "postgresql://postgres.mchmxwxjrlyywutbrppj:radjawali2009%21@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require"
-_RAILWAY_FALLBACK_URL = _SUPABASE_POOLER_URL
-# Cek beberapa nama env var yang umum di Vercel/Railway
-for _k in ('DATABASE_URL', 'POSTGRES_URL', 'POSTGRES_PRISMA_URL', 'POSTGRES_URL_NON_POOLING'):
-    _v = env(_k, '').strip().strip('"').strip("'")
-    if _v:
-        DATABASE_URL = _v
-        break
-else:
-    DATABASE_URL = env('DATABASE_URL', '').strip().strip('"').strip("'")
-# Fallback otomatis untuk Vercel/production jika tidak ada URL sama sekali
-if not DATABASE_URL:
-    if env('VERCEL') or env('VERCEL_ENV') or not DEBUG:
-        DATABASE_URL = _RAILWAY_FALLBACK_URL
-
-# Bersihkan URL dari spasi/quotes yang sering ter-copy dari dashboard
-DATABASE_URL = DATABASE_URL.strip().strip('"').strip("'").strip()
-# Auto-fix: direct Supabase db.*.supabase.co (IPv6-only) -> pooler (IPv4) agar tidak "Cannot assign requested address" di Vercel
-# Jika user set DATABASE_URL=postgresql://postgres:pass@db.mchmxwxjrlyywutbrppj.supabase.co:5432/postgres -> rewrite ke pooler
-if DATABASE_URL and 'db.mchmxwxjrlyywutbrppj.supabase.co' in DATABASE_URL:
-    # preserve password & db, ganti host/user/port ke pooler
-    from urllib.parse import urlparse, unquote
-
-    _tmp = urlparse(DATABASE_URL)
-    _pwd = unquote(_tmp.password or 'radjawali2009!')
-    # pooler butuh user postgres.<project_ref>
-    _pooler_user = 'postgres.mchmxwxjrlyywutbrppj'
-    # encode ! sebagai %21 jika perlu
-    from urllib.parse import quote as _quote
-
-    _pwd_enc = _quote(_pwd, safe='')
-    DATABASE_URL = f"postgresql://{_pooler_user}:{_pwd_enc}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres?sslmode=require"
-# Fix umum: URL tanpa // setelah scheme (mis. postgresql:postgres:... ) -> tambahkan //
-if DATABASE_URL and '://' not in DATABASE_URL and DATABASE_URL.count(':') >= 1:
-    # Jika terlihat seperti postgres:postgres:pass@host... -> perbaiki
-    if DATABASE_URL.startswith('postgres'):
-        # cari posisi : setelah scheme
-        _first_colon = DATABASE_URL.find(':')
-        _rest = DATABASE_URL[_first_colon+1:]
-        if not _rest.startswith('//'):
-            DATABASE_URL = DATABASE_URL[:_first_colon+1] + '//' + _rest.lstrip('/')
-
+# Jika DATABASE_URL diisi, ia diprioritaskan.
+DATABASE_URL = env('DATABASE_URL', '').strip().strip('"').strip("'").strip()
 if DATABASE_URL:
     # Coba pakai dj-database-url jika tersedia, fallback ke parsing manual
     try:
@@ -162,14 +117,11 @@ if DATABASE_URL:
                 ssl_require=False,
             )
         }
-        # Railway/Supabase postgres butuh sslmode=require walau URL tanpa ?sslmode=
-        if DATABASES['default']['ENGINE'] == 'django.db.backends.postgresql':
+        # MySQL butuh charset utf8mb4
+        if DATABASES['default']['ENGINE'] == 'django.db.backends.mysql':
             opts = DATABASES['default'].setdefault('OPTIONS', {})
-            if 'sslmode' not in opts and env('DB_SSLMODE', '').strip().lower() not in ('', 'disable', 'allow'):
-                # hanya pakai sslmode jika user tidak disable
-                sslmode = env('DB_SSLMODE', 'require').strip() or 'require'
-                opts['sslmode'] = sslmode
-            # handle ?sslmode di URL sudah di-parse oleh dj-database-url via OPTIONS
+            if 'charset' not in opts:
+                opts['charset'] = 'utf8mb4'
     except ImportError:
         # Fallback manual parsing tanpa dj-database-url
         from urllib.parse import parse_qs, unquote, urlparse
@@ -177,26 +129,7 @@ if DATABASE_URL:
         _url = urlparse(DATABASE_URL)
         _scheme = _url.scheme.lower()
         _qs = parse_qs(_url.query)
-        if _scheme in ('postgres', 'postgresql', 'pgsql'):
-            DATABASES = {
-                'default': {
-                    'ENGINE': 'django.db.backends.postgresql',
-                    'NAME': unquote(_url.path.lstrip('/')) or env('DB_NAME', 'postgres'),
-                    'USER': unquote(_url.username or ''),
-                    'PASSWORD': unquote(_url.password or ''),
-                    'HOST': _url.hostname or 'localhost',
-                    'PORT': str(_url.port or 5432),
-                    'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
-                }
-            }
-            _opts = {}
-            if 'sslmode' in _qs:
-                _opts['sslmode'] = _qs['sslmode'][0]
-            elif env('DB_SSLMODE', '').strip():
-                _opts['sslmode'] = env('DB_SSLMODE', 'require')
-            if _opts:
-                DATABASES['default']['OPTIONS'] = _opts
-        elif _scheme in ('mysql', 'mysql2', 'mariadb'):
+        if _scheme in ('mysql', 'mysql2', 'mariadb'):
             try:
                 import pymysql  # noqa
                 pymysql.install_as_MySQLdb()
@@ -222,50 +155,9 @@ if DATABASE_URL:
                     'NAME': BASE_DIR / 'db.sqlite3',
                 }
             }
-    # --- Validasi & auto-fix jika NAME ter-parsing salah (mis. URL malformed) ---
-    # Error sebelumnya: NAME='QoeYmoE...@thomas.../sima' (64 char, mengandung @) -> harusnya 'sima'
-    try:
-        _name = DATABASES.get('default', {}).get('NAME', '')
-        if _name and (len(_name) > 63 or '@' in _name or ':' in _name or '/' in _name):
-            # Coba perbaiki: ambil segment terakhir setelah / sebagai db name
-            from urllib.parse import unquote, urlparse
-
-            _u2 = urlparse(DATABASE_URL)
-            _candidate = unquote(_u2.path.lstrip('/')).split('?')[0].split('#')[0].split('/')[0]
-            if _candidate and len(_candidate) <= 63 and '@' not in _candidate and ':' not in _candidate:
-                DATABASES['default']['NAME'] = _candidate
-            else:
-                # Fallback paling aman: ambil setelah / terakhir di URL mentah
-                _raw_last = DATABASE_URL.strip().split('/')[-1].split('?')[0].strip()
-                # Hapus port jika ada (mis. 24876/sima -> sima)
-                if _raw_last and len(_raw_last) <= 63 and '@' not in _raw_last:
-                    # Pastikan bukan host:port
-                    if ':' not in _raw_last or _raw_last.count(':') == 1 and _raw_last.split(':')[0].isdigit():
-                        pass
-                    else:
-                        DATABASES['default']['NAME'] = _raw_last
-                # Jika masih salah, paksa ke 'sima' atau 'postgres' agar tidak 500
-                _final = DATABASES['default'].get('NAME', '')
-                if len(_final) > 63 or '@' in _final or ':' in _final:
-                    DATABASES['default']['NAME'] = 'sima'
-    except Exception:
-        pass
 else:
     DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
-    if DB_ENGINE in ('postgres', 'postgresql', 'supabase'):
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': env('DB_NAME', 'postgres'),
-                'USER': env('DB_USER', 'postgres'),
-                'PASSWORD': env('DB_PASSWORD', ''),
-                'HOST': env('DB_HOST', 'localhost'),
-                'PORT': env('DB_PORT', '5432'),
-                'OPTIONS': {'sslmode': env('DB_SSLMODE', 'require')},
-                'CONN_MAX_AGE': int(env('DB_CONN_MAX_AGE', '60') or 60),
-            }
-        }
-    elif DB_ENGINE in ('mysql', 'mariadb'):
+    if DB_ENGINE in ('mysql', 'mariadb'):
         try:
             import pymysql  # noqa
             pymysql.install_as_MySQLdb()
