@@ -23,6 +23,36 @@ SECRET_KEY = env('SECRET_KEY', 'django-insecure-sima-dev-key-ganti-di-production
 DEBUG = env_bool('DEBUG', True)
 ALLOWED_HOSTS = [h.strip() for h in env('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()]
 
+# --- Vercel / production hardening (fix Bad Request 400) ---
+# Vercel sets VERCEL=1 and VERCEL_URL=xxx.vercel.app — auto-allow agar tidak 400
+if env('VERCEL') or env('VERCEL_ENV') or env('VERCEL_URL'):
+    for h in ['.vercel.app', '.now.sh']:
+        if h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
+    # izinkan host dinamis dari Vercel (mis. sima-xxx.vercel.app)
+    vercel_url = env('VERCEL_URL', '').strip()
+    if vercel_url and vercel_url not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(vercel_url)
+    # jika user lupa set ALLOWED_HOSTS di Vercel, fallback izinkan vercel.app
+    if not env('ALLOWED_HOSTS'):
+        ALLOWED_HOSTS.append('*')
+
+# CSRF untuk https://*.vercel.app (Vercel selalu https)
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in env('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+if env('VERCEL_URL'):
+    _vercel_csrf = f"https://{env('VERCEL_URL').strip()}"
+    if _vercel_csrf not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_vercel_csrf)
+if env('VERCEL') or env('VERCEL_ENV'):
+    for o in ['https://*.vercel.app', 'https://*.now.sh']:
+        if o not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(o)
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+# Vercel proxy selalu https — jangan redirect loop
+SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', False)
+
 INSTALLED_APPS = [
     'jazzmin',
     'django.contrib.admin',
