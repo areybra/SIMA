@@ -10,25 +10,38 @@ from .models import Berita
 
 
 def landing(request):
-    profil = PerguruanProfil.objects.first()
-    total_atlet = AtletProfile.objects.filter(status_aktif=True).count()
-    total_cabor = Cabor.objects.filter(aktif=True).count()
-    total_prestasi = Prestasi.objects.count()
-    jadwal_minggu_ini = JadwalLatihan.objects.filter(aktif=True).count()
+    # Graceful fallback jika DB belum migrate / misconfigured (hindari 500 di Vercel)
+    try:
+        profil = PerguruanProfil.objects.first()
+        total_atlet = AtletProfile.objects.filter(status_aktif=True).count()
+        total_cabor = Cabor.objects.filter(aktif=True).count()
+        total_prestasi = Prestasi.objects.count()
+        jadwal_minggu_ini = JadwalLatihan.objects.filter(aktif=True).count()
 
-    rata_expr = ExpressionWrapper((F('fisik') + F('teknik') + F('mental')) / 3.0, output_field=FloatField())
-    top_atlet = (
-        PenilaianKesiapan.objects.values('atlet__nama_lengkap', 'atlet__cabor__nama')
-        .annotate(rata=Avg(rata_expr))
-        .order_by('-rata')[:5]
-    )
-    top_prestasi = Prestasi.objects.select_related('atlet').order_by('-tahun')[:5]
-    agenda = AgendaEvent.objects.order_by('tanggal_mulai')[:4]
-    jadwal = JadwalLatihan.objects.filter(aktif=True).select_related('cabor')[:6]
-    berita_featured = Berita.objects.filter(is_published=True).order_by('-created_at')[:4]
-    # for badge count in hero
-    from apps.kesiapan.models import PenilaianKesiapan as PK
-    cedera_count = PK.objects.filter(ada_cedera=True).values('atlet').distinct().count()
+        rata_expr = ExpressionWrapper((F('fisik') + F('teknik') + F('mental')) / 3.0, output_field=FloatField())
+        top_atlet = (
+            PenilaianKesiapan.objects.values('atlet__nama_lengkap', 'atlet__cabor__nama')
+            .annotate(rata=Avg(rata_expr))
+            .order_by('-rata')[:5]
+        )
+        top_prestasi = Prestasi.objects.select_related('atlet').order_by('-tahun')[:5]
+        agenda = AgendaEvent.objects.order_by('tanggal_mulai')[:4]
+        jadwal = JadwalLatihan.objects.filter(aktif=True).select_related('cabor')[:6]
+        berita_featured = Berita.objects.filter(is_published=True).order_by('-created_at')[:4]
+        from apps.kesiapan.models import PenilaianKesiapan as PK
+        cedera_count = PK.objects.filter(ada_cedera=True).values('atlet').distinct().count()
+    except Exception as e:
+        # Log ke console Vercel agar debug, tapi jangan 500
+        import logging
+
+        logging.getLogger(__name__).warning(f"DB error di landing (fallback stats kosong): {e}")
+        profil = None
+        total_atlet = total_cabor = total_prestasi = jadwal_minggu_ini = cedera_count = 0
+        top_atlet = []
+        top_prestasi = []
+        agenda = []
+        jadwal = []
+        berita_featured = []
 
     context = {
         'profil': profil,

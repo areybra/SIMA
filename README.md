@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.0.2-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-0.0.3-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/Django-5.x-092E20?style=flat-square&logo=django&logoColor=white" alt="Django"/>
   <img src="https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white" alt="Bootstrap"/>
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/MySQL-8%2F8-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <br/>
-  <sub>Template-only (no SPA) • SQLite dev → Postgres/MySQL prod • Jazzmin Admin • Mobile-first • v0.0.2 — DATABASE_URL Railway auto</sub>
+  <sub>Template-only (no SPA) • SQLite dev → Postgres/MySQL prod • Jazzmin Admin • Mobile-first • v0.0.3 — DB URL auto-fix</sub>
 </p>
 
 ---
