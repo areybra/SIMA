@@ -105,8 +105,27 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #   1) DATABASE_URL — satu baris URL: mysql://user:pass@host:port/db
 #   2) DB_ENGINE + DB_HOST/DB_PORT/... — terpisah (legacy)
 # Jika DATABASE_URL diisi, ia diprioritaskan.
+# CATATAN: Hanya mendukung MySQL/MariaDB. PostgreSQL TIDAK didukung.
 DATABASE_URL = env('DATABASE_URL', '').strip().strip('"').strip("'").strip()
+
+# Auto-fix: Jika DATABASE_URL kosong, gunakan fallback MySQL Railway untuk production
+_RAILWAY_MYSQL_URL = "mysql://root:fkLfCWNxaLCcaMOKupQOJvseIbITzpgX@shortline.proxy.rlwy.net:48255/railway"
+
+# Cek apakah DATABASE_URL diisi, jika tidak gunakan fallback untuk production
+if not DATABASE_URL:
+    if not DEBUG:
+        # Production (Vercel/Railway) -> gunakan fallback MySQL Railway
+        DATABASE_URL = env('DATABASE_URL', '').strip() or "mysql://root:fkLfCWNxaLCcaMOKupQOJvseIbITzpgX@shortline.proxy.rlwy.net:48255/railway"
+    else:
+        DATABASE_URL = ""
+
 if DATABASE_URL:
+    # Reject PostgreSQL URLs explicitly
+    if DATABASE_URL.strip().lower().startswith(('postgres://', 'postgresql://')):
+        raise ImproperlyConfigured(
+            "PostgreSQL tidak didukung. Gunakan MySQL/MariaDB URL (mysql://...). "
+            "Untuk Supabase, gunakan connection pooler MySQL atau migrasi ke MySQL."
+        )
     # Coba pakai dj-database-url jika tersedia, fallback ke parsing manual
     try:
         import dj_database_url  # type: ignore
