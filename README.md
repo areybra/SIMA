@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.0.1-blue?style=flat-square" alt="Version"/>
+  <img src="https://img.shields.io/badge/version-0.0.2-blue?style=flat-square" alt="Version"/>
   <img src="https://img.shields.io/badge/Python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
   <img src="https://img.shields.io/badge/Django-5.x-092E20?style=flat-square&logo=django&logoColor=white" alt="Django"/>
   <img src="https://img.shields.io/badge/Bootstrap-5.3-7952B3?style=flat-square&logo=bootstrap&logoColor=white" alt="Bootstrap"/>
@@ -18,7 +18,7 @@
   <img src="https://img.shields.io/badge/MySQL-8%2F8-4479A1?style=flat-square&logo=mysql&logoColor=white" alt="MySQL"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/>
   <br/>
-  <sub>Template-only (no SPA) • SQLite dev → Postgres/MySQL prod • Jazzmin Admin • Mobile-first • v0.0.1</sub>
+  <sub>Template-only (no SPA) • SQLite dev → Postgres/MySQL prod • Jazzmin Admin • Mobile-first • v0.0.2 — DATABASE_URL Railway auto</sub>
 </p>
 
 ---
@@ -128,40 +128,33 @@ python manage.py runserver
 | `SECRET_KEY` | `django-insecure-...` | Generate baru untuk production |
 | `DEBUG` | `True` / `False` | `False` di production |
 | `ALLOWED_HOSTS` | `127.0.0.1,localhost,example.com` | Domain production |
-| `DB_ENGINE` | `sqlite` / `postgres` / `mysql` | Pilih satu |
-| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | — | Lihat `.env.example` |
+| `DATABASE_URL` | `postgresql://postgres:pass@thomas.proxy.rlwy.net:24876/sima` | **Otomatis terisi Railway di deploy** — prioritas utama, `DB_ENGINE` diabaikan jika ada |
+| `DB_ENGINE` | `sqlite` / `postgres` / `mysql` | Fallback jika `DATABASE_URL` kosong |
+| `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | — | Lihat `.env.example` untuk split mode |
 | `DB_SSLMODE` | `require` | Untuk Postgres/Supabase |
 | `DB_CONN_MAX_AGE` | `60` | Koneksi persisten |
 
-> `.env` di-ignore git. Selalu pakai `.env.example` sebagai acuan dan jangan commit secret production.
+> **Auto DB di deploy:** `config/settings.py` pakai `_RAILWAY_FALLBACK_URL` jika `DATABASE_URL` tidak di-set & `VERCEL=1` atau `DEBUG=False` — jadi di Vercel/Railway langsung connect ke `thomas.proxy.rlwy.net:24876/sima` tanpa set env manual. Lokal `DEBUG=True` tetap pakai `sqlite` jika `DATABASE_URL` kosong.
+> `.env` di-ignore git. `.env.example` sudah berisi `DATABASE_URL` Railway aktif — `cp .env.example .env` langsung jalan untuk dev yang punya akses Railway, atau kosongkan untuk `sqlite`.
 
 ---
 
-## 🗄️ Database — SQLite / Postgres / MySQL
+## 🗄️ Database — SQLite / Postgres / MySQL (via DATABASE_URL)
 
 ```env
+# Cara 1 — DATABASE_URL (direkomendasikan, otomatis di deploy)
+DATABASE_URL=postgresql://postgres:yQoeYmoEyoAIqkoSdmcAPYrqEsdMoytO@thomas.proxy.rlwy.net:24876/sima
+# → di Vercel/Railway tidak perlu set manual, sudah fallback otomatis di settings.py
+# Supabase contoh: postgresql://postgres.xxx:pass@aws-0-xxx.pooler.supabase.com:6543/postgres?sslmode=require
+
+# Cara 2 — Split (fallback jika DATABASE_URL kosong)
 # Dev (tanpa server)
 DB_ENGINE=sqlite
-
-# Supabase / Postgres (pooler 6543 direkomendasikan)
-DB_ENGINE=postgres
-DB_HOST=db.xxxxx.supabase.co
-DB_PORT=6543
-DB_NAME=postgres
-DB_USER=postgres
-DB_PASSWORD=***
-DB_SSLMODE=require
-
-# MySQL / MariaDB
-DB_ENGINE=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=sima
-DB_USER=root
-DB_PASSWORD=***
+# Postgres: DB_ENGINE=postgres + DB_HOST/PORT/NAME/USER/PASSWORD/DB_SSLMODE
+# MySQL: DB_ENGINE=mysql + DB_HOST/PORT/NAME/USER/PASSWORD
 ```
 
-Tanpa ganti kode — `config/settings.py` memilih engine dari `.env` (`pymysql.install_as_MySQLdb()` untuk MySQL).
+Prioritas: `DATABASE_URL` > `DB_ENGINE`. Deploy Vercel/Railway → `DATABASE_URL` Railway otomatis terpakai (via `_RAILWAY_FALLBACK_URL` di `config/settings.py:110`). Lokal `DEBUG=True` tanpa `DATABASE_URL` → `sqlite`.
 
 ---
 

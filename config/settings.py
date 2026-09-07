@@ -105,8 +105,10 @@ WSGI_APPLICATION = 'config.wsgi.application'
 #   1) DATABASE_URL — satu baris URL (Railway/Supabase): postgres://user:pass@host:port/db
 #      Contoh Railway: postgresql://postgres:yQoeYmoE...@thomas.proxy.rlwy.net:24876/sima
 #   2) DB_ENGINE + DB_HOST/DB_PORT/... — terpisah (legacy)
-# Jika DATABASE_URL diisi, ia diprioritaskan.
-DATABASE_URL = env('DATABASE_URL', '').strip()
+# Jika DATABASE_URL diisi, ia diprioritaskan. Saat deploy Vercel/Railway, otomatis
+# fallback ke Railway URL di bawah jika env tidak di-set — jadi langsung connect tanpa set manual.
+_RAILWAY_FALLBACK_URL = "postgresql://postgres:yQoeYmoEyoAIqkoSdmcAPYrqEsdMoytO@thomas.proxy.rlwy.net:24876/sima"
+DATABASE_URL = env('DATABASE_URL', '').strip() or (_RAILWAY_FALLBACK_URL if (env('VERCEL') or env('VERCEL_ENV') or not DEBUG) else "")
 if DATABASE_URL:
     # Coba pakai dj-database-url jika tersedia, fallback ke parsing manual
     try:
