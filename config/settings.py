@@ -119,6 +119,13 @@ if not DATABASE_URL:
     else:
         DATABASE_URL = ""
 
+# Pastikan pymysql di-install sebagai MySQLdb SEBELUM Django load MySQL backend
+try:
+    import pymysql
+    pymysql.install_as_MySQLdb()
+except ImportError:
+    pass
+
 if DATABASE_URL:
     # Reject PostgreSQL URLs explicitly
     if DATABASE_URL.strip().lower().startswith(('postgres://', 'postgresql://')):
@@ -149,11 +156,6 @@ if DATABASE_URL:
         _scheme = _url.scheme.lower()
         _qs = parse_qs(_url.query)
         if _scheme in ('mysql', 'mysql2', 'mariadb'):
-            try:
-                import pymysql  # noqa
-                pymysql.install_as_MySQLdb()
-            except ImportError:
-                pass
             DATABASES = {
                 'default': {
                     'ENGINE': 'django.db.backends.mysql',
