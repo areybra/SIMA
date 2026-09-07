@@ -1,6 +1,6 @@
 Django>=5,<6
 django-jazzmin
-PyMySQL
+mysqlclient
 dj-database-url
 python-dotenv
 whitenoise
