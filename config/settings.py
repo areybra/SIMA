@@ -243,7 +243,15 @@ STORAGES = {
 }
 
 MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Vercel: filesystem read-only kecuali /tmp → simpan upload ke /tmp agar edit tidak 500
+if env('VERCEL') or env('VERCEL_ENV'):
+    MEDIA_ROOT = Path('/tmp/media')
+    try:
+        MEDIA_ROOT.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+else:
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
