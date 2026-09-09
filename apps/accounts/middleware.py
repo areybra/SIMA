@@ -13,7 +13,7 @@ class SecurityHeadersMiddleware:
             "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'unsafe-inline'; "
             "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; "
             "img-src 'self' data: https:; "
-            "connect-src 'self'; frame-ancestors 'none'",
+            "connect-src 'self' https://cdn.jsdelivr.net; frame-ancestors 'none'",
         )
         response.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
         response.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
