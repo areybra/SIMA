@@ -132,6 +132,18 @@ h1,h2,h3,.display-modern{font-family:'Outfit','Space Grotesk',sans-serif;letter-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+// Global broken /media/ image fallback (Vercel ephemeral: file hilang → ganti placeholder, cegah spam 404)
+document.addEventListener('error', function(e){
+  const t=e.target;
+  if(t.tagName==='IMG' && t.src.includes('/media/')){
+    e.preventDefault();
+    t.style.display='none';
+    const ph=document.createElement('div');
+    ph.textContent=(t.alt||'?').trim().slice(0,1).toUpperCase()||'?';
+    ph.style.cssText='width:'+(t.width||96)+'px;height:'+(t.height||96)+'px;border-radius:12px;background:var(--stone);border:1px solid var(--line);display:grid;place-items:center;font-weight:800;color:var(--muted);';
+    t.insertAdjacentElement('afterend', ph);
+  }
+}, true);
 // Auto-close mobile nav & dashboard sidebar after link click (UX)
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.nav-modern .nav-link').forEach(function(a){
