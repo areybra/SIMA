@@ -241,6 +241,8 @@ STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
 }
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = env_bool('WHITENOISE_AUTOREFRESH', DEBUG)
 
 MEDIA_URL = 'media/'
 # Vercel: filesystem read-only kecuali /tmp → simpan upload ke /tmp agar edit tidak 500
