@@ -19,23 +19,24 @@ def env_bool(key, default=False):
     return val.lower() in ('1', 'true', 'yes', 'on')
 
 
-SECRET_KEY = env('SECRET_KEY', 'django-insecure-sima-dev-key-ganti-di-production')
 DEBUG = env_bool('DEBUG', True)
+SECRET_KEY = env('SECRET_KEY', 'django-insecure-sima-dev-key-ganti-di-production')
+if not DEBUG and SECRET_KEY.startswith('django-insecure-'):
+    raise RuntimeError('SECRET_KEY tidak aman untuk production. Set SECRET_KEY acak di .env')
 ALLOWED_HOSTS = [h.strip() for h in env('ALLOWED_HOSTS', '127.0.0.1,localhost,testserver').split(',') if h.strip()]
 
 # --- Vercel / production hardening (fix Bad Request 400) ---
-# Vercel sets VERCEL=1 and VERCEL_URL=xxx.vercel.app — auto-allow agar tidak 400
 if env('VERCEL') or env('VERCEL_ENV') or env('VERCEL_URL'):
     for h in ['.vercel.app', '.now.sh']:
         if h not in ALLOWED_HOSTS:
             ALLOWED_HOSTS.append(h)
-    # izinkan host dinamis dari Vercel (mis. sima-xxx.vercel.app)
     vercel_url = env('VERCEL_URL', '').strip()
     if vercel_url and vercel_url not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(vercel_url)
-    # jika user lupa set ALLOWED_HOSTS di Vercel, fallback izinkan vercel.app
     if not env('ALLOWED_HOSTS'):
-        ALLOWED_HOSTS.append('*')
+        import warnings
+        warnings.warn('ALLOWED_HOSTS kosong di Vercel — fallback *.vercel.app aktif. Set ALLOWED_HOSTS eksplisit di dashboard Vercel.')
+        ALLOWED_HOSTS.append('.vercel.app')
 
 # CSRF untuk https://*.vercel.app (Vercel selalu https)
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in env('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
@@ -50,8 +51,27 @@ if env('VERCEL') or env('VERCEL_ENV'):
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
-# Vercel proxy selalu https — jangan redirect loop
 SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', False)
+
+# --- Hardening: cookies & HSTS (aktif otomatis saat DEBUG=False) ---
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_AGE = 60 * 60 * 8  # 8 jam, was 2 minggu
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    X_FRAME_OPTIONS = 'DENY'
+else:
+    SESSION_COOKIE_AGE = 60 * 60 * 8
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -78,6 +98,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'apps.accounts.middleware.SecurityHeadersMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -117,6 +138,16 @@ except ImportError:
     pass
 
 # Logika database: DATABASE_URL diprioritaskan, jika kosong pakai DB_ENGINE
+if not DEBUG and ALLOWED_HOSTS == ['*']:
+    raise RuntimeError('ALLOWED_HOSTS=* tidak diizinkan di production. Set domain eksplisit.')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'sima-ratelimit',
+    }
+}
+
 if not DATABASE_URL:
     DB_ENGINE = env('DB_ENGINE', 'sqlite').lower()
     if DB_ENGINE in ('mysql', 'mariadb'):
@@ -241,7 +272,6 @@ JAZZMIN_SETTINGS = {
         'atlets.DokumenAtlet': 'fas fa-folder-open',
         'kesiapan.PenilaianKesiapan': 'fas fa-heartbeat',
         'jadwal.JadwalLatihan': 'fas fa-calendar-alt',
-        'landing.Berita': 'fas fa-newspaper',
         'landing.ContactMessage': 'fas fa-envelope',
         'jadwal.AgendaEvent': 'fas fa-flag',
     },

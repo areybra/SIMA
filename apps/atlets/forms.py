@@ -1,5 +1,7 @@
 from django import forms
 
+from apps.accounts.validators import ALLOWED_DOC_EXTS, ALLOWED_IMAGE_EXTS, MAX_DOC_BYTES, MAX_IMAGE_BYTES, validate_upload
+
 from .models import AtletProfile, Cabor, DokumenAtlet, PerguruanProfil, Prestasi
 
 
@@ -25,6 +27,11 @@ class PerguruanProfilForm(BootstrapMixin, forms.ModelForm):
         model = PerguruanProfil
         fields = ['nama', 'tentang', 'visi', 'misi', 'alamat', 'kontak', 'logo']
 
+    def clean_logo(self):
+        f = self.cleaned_data.get('logo')
+        validate_upload(f, ALLOWED_IMAGE_EXTS, MAX_IMAGE_BYTES, 'Logo')
+        return f
+
 
 class AtletProfileForm(BootstrapMixin, forms.ModelForm):
     class Meta:
@@ -35,6 +42,11 @@ class AtletProfileForm(BootstrapMixin, forms.ModelForm):
             'status_aktif', 'foto', 'no_hp', 'alamat',
         ]
         widgets = {'tanggal_lahir': forms.DateInput(attrs={'type': 'date'})}
+
+    def clean_foto(self):
+        f = self.cleaned_data.get('foto')
+        validate_upload(f, ALLOWED_IMAGE_EXTS, MAX_IMAGE_BYTES, 'Foto')
+        return f
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,12 +60,22 @@ class PrestasiForm(BootstrapMixin, forms.ModelForm):
         model = Prestasi
         fields = ['atlet', 'nama_kejuaraan', 'tingkat', 'hasil', 'tahun', 'bukti']
 
+    def clean_bukti(self):
+        f = self.cleaned_data.get('bukti')
+        validate_upload(f, ALLOWED_DOC_EXTS, MAX_DOC_BYTES, 'Bukti')
+        return f
+
 
 class DokumenAtletForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = DokumenAtlet
         fields = ['atlet', 'label', 'file', 'keterangan']
         widgets = {'label': forms.TextInput(attrs={'placeholder': 'Contoh: KTP / KK / Akta Kelahiran / Ijazah'})}
+
+    def clean_file(self):
+        f = self.cleaned_data.get('file')
+        validate_upload(f, ALLOWED_DOC_EXTS, MAX_DOC_BYTES, 'File dokumen')
+        return f
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)

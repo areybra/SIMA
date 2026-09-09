@@ -4,13 +4,18 @@
 <div class="py-5 dot-grid" style="min-height:60vh; display:grid; place-items:center;">
   <div class="container" style="max-width:520px">
     <div class="text-center mb-4">
-      <div class="shape-blob mx-auto d-grid place-items-center mb-3" style="width:64px; height:64px; background:var(--primary-ink); color:#fff;"><i class="fa-solid fa-medal"></i></div>
-      <div class="section-label">Masuk — 4 Role</div>
+      {% if perguruan_global and perguruan_global.logo %}
+        <img src="{{ perguruan_global.logo.url }}" alt="Logo {{ perguruan_global.nama }}" class="mx-auto mb-3" style="width:76px; height:76px; object-fit:cover; border-radius:22px; border:1px solid var(--line); box-shadow:0 8px 28px rgba(15,23,42,.08);">
+        <div class="section-label">{{ perguruan_global.nama }}</div>
+      {% else %}
+        <div class="shape-blob mx-auto d-grid place-items-center mb-3" style="width:64px; height:64px; background:var(--primary-ink); color:#fff;"><i class="fa-solid fa-medal"></i></div>
+      {% endif %} 
       <h2 class="display-serif h3 mt-1">Login SIMA</h2>
-      <p class="small" style="color:var(--muted)">Admin / Pelatih / Jurnalis / Atlet — akun dibuat admin, tanpa registrasi publik.</p>
+      <p class="small" style="color:var(--muted)">Harap Input Username dan Password Anda Dengan Benar</p>
     </div>
     <div class="card-minimal p-4 p-md-5">
-      {% if form.errors %}<div class="alert alert-danger shape-soft" style="border-radius:14px;">Username atau password salah.</div>{% endif %}
+      {% if form.non_field_errors %}<div class="alert alert-danger shape-soft" style="border-radius:14px;">{{ form.non_field_errors.0 }}</div>
+      {% elif form.errors %}<div class="alert alert-danger shape-soft" style="border-radius:14px;">Username atau password salah.</div>{% endif %}
       <form method="post">{% csrf_token %}
         <div class="mb-3"><label class="form-label" style="font-family:'Space Grotesk',sans-serif; font-weight:600;">Username</label><input name="username" class="form-control shape-pill" style="border-radius:999px; border-color:var(--line); padding:.7rem 1rem;" required autofocus></div>
         <div class="mb-4"><label class="form-label" style="font-family:'Space Grotesk',sans-serif; font-weight:600;">Password</label><input name="password" type="password" class="form-control shape-pill" style="border-radius:999px; border-color:var(--line); padding:.7rem 1rem;" required></div>
@@ -18,10 +23,6 @@
       </form>
       <div class="hairline my-4"></div>
       <div class="small text-center" style="color:var(--muted)">Lupa akun? Hubungi admin perguruan. Akun dibuat oleh admin.</div>
-    </div>
-    <div class="d-flex justify-content-center gap-2 mt-3">
-      <a href="/" class="btn btn-ghost btn-pill btn-sm">Beranda</a>
-      <a href="{% url 'tentang' %}" class="btn btn-ghost btn-pill btn-sm">Tentang Kami</a>
     </div>
   </div>
 </div>

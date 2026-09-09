@@ -1,0 +1,31 @@
+{% extends 'dashboard/layout.html' %}
+{% block title %}Profil Akun — SIMA{% endblock %}
+{% block dash %}
+<div class="d-flex flex-wrap gap-3 justify-content-between align-items-end mb-4">
+  <div>
+    <div class="small-caps">Pengaturan</div>
+    <h3 class="mb-0" style="font-family:'Outfit',sans-serif; font-weight:800;">Profil Akun</h3>
+    <p class="small mb-0" style="color:var(--muted); font-weight:500;">Kelola akun login Anda sendiri — bukan data atlet.</p>
+  </div>
+  <span class="shape-pill px-3 py-2 small" style="background:var(--stone); border:1px solid var(--line); font-weight:700;">Role: {{ user.get_role_display }}</span>
+</div>
+<div class="card-minimal p-4 p-md-5" style="max-width:720px">
+  <form method="post">{% csrf_token %}
+    <div class="form-grid">
+      {% for field in form %}
+        <div>
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+          {{ field }}
+          {% if field.help_text %}<div class="small mt-1" style="color:var(--muted); font-weight:500;">{{ field.help_text }}</div>{% endif %}
+          {% if field.errors %}<div class="small mt-1" style="color:#DC2626; font-weight:600;">{{ field.errors.0 }}</div>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% if form.non_field_errors %}<div class="alert alert-danger mt-3" style="border-radius:14px;">{{ form.non_field_errors.0 }}</div>{% endif %}
+    <div class="d-flex flex-wrap gap-2 mt-4">
+      <button class="btn btn-ink btn-pill px-4">Simpan Perubahan</button>
+      <a href="{% url 'ganti-password' %}" class="btn btn-ghost btn-pill">Ganti Password</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

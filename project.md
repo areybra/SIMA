@@ -2,66 +2,54 @@
 
 ## 1. Informasi Project
 
-**SIMA** adalah aplikasi web fullstack untuk mengolah data para atlet beserta
-tingkat kesiapannya hingga jadwal rutin latihan.
+**SIMA** adalah aplikasi web fullstack untuk mengolah data para atlet beserta tingkat kesiapannya hingga jadwal rutin latihan.
 
-- **Pengguna utama 1 — Pelatih:** mengolah data atlet, menginput penilaian
-  kesiapan rutin, mencatat prestasi, serta mengatur jadwal & dokumen atlet, agenda/event.
-- **Pengguna utama 2 — Atlet/Anggota:** memantau data tentang dirinya sendiri
-  (profil, tren kesiapan, prestasi, jadwal) dalam mode **view-only**, plus **upload dokumen sendiri** (KTP/KK/Akta/Ijazah dll dengan label bebas).
-- **Pengguna ke-3 — Admin:** membuat akun, mengelola master cabor dan profil
-  perguruan melalui Django Jazzmin (akses langsung `/admin/` — tidak ditampilkan sebagai link publik untuk mengurangi permukaan serangan).
-- **Pengguna ke-4 — Jurnalis:** dashboard khusus untuk **upload berita & prestasi** (berita untuk landing, prestasi untuk hall-of-fame).
-- **Tanpa registrasi publik.** Seluruh akun dibuat oleh admin. Halaman login
-  adalah satu-satunya pintu masuk.
+- **Pengguna utama 1 — Pelatih:** mengolah data atlet, menginput penilaian kesiapan rutin, mencatat prestasi, serta mengatur jadwal & dokumen atlet, agenda/event. Akses via `/login/` → `/dashboard/pelatih/`.
+- **Pengguna utama 2 — Atlet/Anggota:** memantau data tentang dirinya sendiri (profil, tren kesiapan, prestasi, jadwal) dalam mode **view-only**, plus **upload dokumen sendiri** (KTP/KK/Akta/Ijazah dll dengan label bebas) dan **pengaturan akun sendiri** (username, nama, email, no HP, ganti password). Jadwal & agenda kini tampil tepat di bawah profil.
+- **Pengguna ke-3 — Admin:** mengelola seluruh data via **Jazzmin `/admin/` saja** — terisolasi penuh dari dashboard. Tidak dapat login di `/login/` (ditolak dengan pesan generik tersamarkan) dan tidak dapat membuka `/dashboard/*` (403). Buat akun pelatih/atlet via `/admin/`.
+- **Tanpa registrasi publik.** Semua akun dibuat oleh admin. Landing publik dihapus — `GET /` langsung redirect ke `/login/` (anon) atau `/dashboard/` (login). Tidak ada halaman Tentang/Berita/Prestasi/Kontak publik lagi.
 
 ## 2. Tujuan
 
  1. Mendigitalkan biodata atlet (termasuk TB/BB), kategori/kelas, dan status aktif.
- 2. Memantau kesiapan atlet secara berkala: fisik, teknik, mental (0–100),
-    VO2Max, snapshot BB/TB, kehadiran, status cedera, dan catatan pelatih.
- 3. Menyajikan statistik: tren kesiapan, top atlet, distribusi kehadiran,
-    daftar cedera, dan prestasi terbaru — di landing page maupun dashboard.
-  4. Mengelola jadwal latihan rutin mingguan dan agenda/event (try out,
-     kejuaraan, latihan gabungan) — internal dashboard, tidak di-link publik (kontak yang tampil di landing).
-  5. Memberi atlet akses transparan dan terbatas hanya pada datanya sendiri, termasuk kelola dokumen pribadi berlabel (KK/KTP/Akta/Ijazah/Surat Kesehatan/Lainnya).
-  6. Memberi jurnalis ruang khusus untuk kurasi berita (rich text + kategori + cover + views) & prestasi tanpa akses ke data kesiapan/jadwal sensitif.
-  7. Menyediakan halaman Kontak publik sebagai pengganti Jadwal di landing, plus inbox pesan untuk admin.
+ 2. Memantau kesiapan atlet secara berkala: fisik, teknik, mental (0–100), VO2Max, snapshot BB/TB, kehadiran, status cedera, dan catatan pelatih. Chart menggunakan warna grafik umum (merah Fisik, biru Teknik, hijau Mental) + adaptif light/dark.
+ 3. Menyajikan statistik: tren kesiapan, top atlet, distribusi kehadiran, daftar cedera, dan prestasi terbaru — hanya di dashboard (landing dihapus).
+ 4. Mengelola jadwal latihan rutin mingguan dan agenda/event (try out, kejuaraan, latihan gabungan) — tampil di dashboard pelatih dan tepat di bawah profil atlet.
+ 5. Memberi atlet akses transparan dan terbatas hanya pada datanya sendiri, termasuk kelola dokumen pribadi berlabel dan pengaturan akun login sendiri.
+ 6. Isolasi keamanan: admin hanya via `/admin/`; pelatih dan atlet hanya via `/login/` → `/dashboard/`.
 
 ## 3. Tech Stack
 
 | Lapisan   | Teknologi |
 |-----------|-----------|
 | Fullstack | Django 5.x + Django Template (tanpa SPA/DRF) |
-| UI publik & dashboard | Bootstrap 5 (CDN) + minimalist modern tokens |
-| Grafik    | Chart.js 4 (CDN) |
-| Desain    | UI Pro Max — Modern minimal non-klasik · Outfit + Plus Jakarta Sans/Space Grotesk · weight 500-800, line-height 1.75, spacing lega · shapes subtle blob/arch/pill |
-| Admin theme | django-jazzmin |
+| UI publik & dashboard | Bootstrap 5.3.3 (CDN) + design tokens 60-30-10 ungu |
+| Grafik    | Chart.js 4 (CDN) — warna merah/hijau/biru standar, grid adaptif dark |
+| Desain    | 60-30-10: Light bg `#F8FAFC` / Dark bg `#0B0F19`, teks `#0F172A` / `#F1F5F9`, aksen `#7C3AED` / `#A78BFA` (neon) |
+| Admin theme | `django-jazzmin` 3.0 — hanya untuk `/admin/` (isolated) |
 | Database dev | SQLite (`db.sqlite3`) |
-| Database prod | MySQL/MariaDB via `PyMySQL` (switch lewat `.env`) |
+| Database prod | MySQL/MariaDB via `PyMySQL` (switch lewat `.env` + `DATABASE_URL`) |
 | Config    | `python-dotenv` (`.env` / `.env.example`) |
-| Static prod | `whitenoise` |
-| Media upload | Pillow (`media/atlet/`, `media/prestasi/`, `media/perguruan/`, `media/dokumen/`, `media/berita/`) |
-| Editor     | Quill 1.3.7 (CDN) untuk rich text Berita (heading/bold/italic/list/link/image, HTML disimpan, `|safe` di detail) |
+| Static prod | `whitenoise` + `static/css/sima.css` (extracted) |
+| Media upload | Pillow (`media/atlet/`, `media/prestasi/`, `media/perguruan/`, `media/dokumen/`) |
+| A11y | skip-link, `:focus-visible`, `prefers-reduced-motion`, favicon SVG, manifest, meta theme-color |
 | Zona waktu | Asia/Jakarta, bahasa `id` |
-| Keamanan  | `/admin/` tidak ditautkan di UI publik/login/footer; hanya diketahui admin. Akun dibuat admin via Jazzmin. |
+| Keamanan  | `/admin/` isolated; pesan login admin disamarkan identik password salah; admin ditolak di `/login/` dan `/dashboard/*`; rate limit 5/15 menit; upload allowlist + 5/10MB; CSP + HSTS + Secure cookies (prod) |
 
-## 4. Peran & Hak Akses
+## 4. Peran & Hak Akses (3 Role Aktif)
 
-| Fitur | Admin | Pelatih | Jurnalis | Atlet |
-|-------|:-----:|:-------:|:--------:|:-----:|
-| `/admin/` (Jazzmin, tidak di-link publik): user & semua data | ✅ | ❌ | ❌ | ❌ |
-| Dashboard pelatih + CRUD atlet/kesiapan/jadwal/cabor/dokumen/profil | ✅ | ✅ | ❌ | ❌ |
-| Input penilaian kesiapan | ✅ | ✅ | ❌ | ❌ |
-| Kelola dokumen atlet (semua) | ✅ | ✅ | ❌ | ❌ |
-| Dashboard jurnalis: berita + prestasi | ✅ | ❌ | ✅ | ❌ |
-| Dashboard `/dashboard/saya/` (data + dokumen sendiri) | ❌ | ❌ | ❌ | ✅ |
-| Landing + login | ✅ | ✅ | ✅ | ✅ |
-| Registrasi publik | ❌ | ❌ | ❌ | ❌ |
+| Fitur | Admin (`/admin/`) | Pelatih | Atlet |
+|-------|:-----------------:|:-------:|:-----:|
+| `/admin/` Jazzmin (CRUD semua model) | ✅ | ❌ | ❌ |
+| `/login/` → `/dashboard/` | ❌ (ditolak, pesan generik) | ✅ | ✅ |
+| Dashboard pelatih: atlet/kesiapan/prestasi/jadwal/dokumen | ❌ (403) | ✅ | ❌ |
+| Dashboard atlet `/dashboard/saya/` + dokumen sendiri + pengaturan akun | ❌ | ❌ | ✅ |
+| Pengaturan akun `/dashboard/akun/` (username, nama, email, no HP, ganti password) | ❌ (403) | ✅ | ✅ |
+| Cabor & Profil Perguruan (hanya via `/admin/`) | ✅ | ❌ | ❌ |
+| Logo perguruan di halaman login (via `perguruan_global`) | — | — | — |
+| Registrasi publik | ❌ | ❌ | ❌ |
 
-Proteksi: `apps/accounts/decorators.py` (`role_required`, `admin_pelatih_required`, `jurnalis_required`, `admin_pelatih_jurnalis_required`);
-superuser selalu lolos. Atlet hanya CRUD dokumen miliknya sendiri (`atlet` dikunci ke profilnya, delete 404 bila bukan miliknya). Jurnalis hanya edit/hapus berita miliknya sendiri (admin bebas). Atlet yang akunnya belum ditautkan ke `AtletProfile`
-melihat halaman instruksi `atlet_noprofile.html`.
+Proteksi: `apps/accounts/decorators.py` (`strict_role_required`, `pelatih_required`, `atlet_required` — **tanpa** pengecualian superuser); `SIMALoginView` menolak admin dengan pesan `invalid_login` generik; dashboard `profil_akun` & `GantiPasswordView` dikunci untuk pelatih/atlet saja.
 
 ## 5. Struktur Project
 
@@ -69,118 +57,100 @@ melihat halaman instruksi `atlet_noprofile.html`.
 SIMA/
 ├── manage.py
 ├── requirements.txt
-├── .env / .env.example      # switch SQLite <-> MySQL
+├── .env / .env.example      # DATABASE_URL > DB_ENGINE fallback
 ├── db.sqlite3               # dev saja
 ├── config/
 │   ├── settings.py          # custom user, jazzmin, DB env, static/media, login URLs
-│   └── urls.py              # admin, login/logout, dashboard/, landing /
+│   └── urls.py              # admin, login/logout, dashboard/, landing (hanya /)
 ├── apps/
-│   ├── accounts/            # CustomUser(role: admin/pelatih/jurnalis/atlet), decorators, admin user
-│   ├── atlets/              # Cabor, PerguruanProfil, AtletProfile, Prestasi, DokumenAtlet (+forms/admin)
-│   ├── kesiapan/            # PenilaianKesiapan (+form/admin)
-│   ├── jadwal/              # JadwalLatihan, AgendaEvent (+forms/admin) — internal saja
-│   ├── dashboard/           # router + pelatih/atlet/jurnalis dashboards + CRUD dokumen/berita/prestasi
-│   └── landing/             # homepage + tentang/berita(prestasi views+richtext+kategori)/prestasi/kontak + Berita/ContactMessage
+│   ├── accounts/            # CustomUser(role: admin/pelatih/atlet), decorators strict, SIMALoginView, forms AccountProfileForm
+│   ├── atlets/              # Cabor, PerguruanProfil, AtletProfile, Prestasi, DokumenAtlet
+│   ├── kesiapan/            # PenilaianKesiapan
+│   ├── jadwal/              # JadwalLatihan, AgendaEvent
+│   ├── dashboard/           # router + pelatih/atlet dashboards + CRUD + profil_akun/ganti-password
+│   └── landing/             # hanya redirect / (ContactMessage masih ada, Berita dihapus)
 ├── templates/
-│   ├── base.html            # nav modern sans (Outfit), palette slate/blue, typography 500-800 non-ramping, spacing 48px, shapes subtle, tanpa ikon berlebih — nav kini Kontak bukan Jadwal
-│   ├── landing/home.html    # hero modern + KPI + berita ringkas + tentang/prestasi ringkas + kontak teaser (ganti jadwal)
-│   ├── landing/tentang.html # modern non-klasik, visi/misi ringkas
-│   ├── landing/berita_list.html + berita_detail.html  # kategori filter + views counter + rich-content safe HTML
-│   ├── landing/prestasi.html  # filter ringkas
-│   ├── landing/kontak.html  # form nama/email/subjek/pesan + info perguruan
-│   ├── registration/login.html  # tanpa bocoran /admin
-│   └── dashboard/           # layout 4 role + form-grid 2 kolom + Quill richtext untuk konten berita + list minimal
+│   ├── base.html            # {% load static %}, favicon SVG data-uri, theme-color, skip-link, <main id=main-content>, static/css/sima.css
+│   ├── registration/login.html  # logo perguruan di atas form + pesan generik tersamarkan
+│   └── dashboard/           # layout tanpa hamburger, profil_akun.html, ganti_password.html, atlet.html (jadwal di bawah profil), pelatih.html (chart adaptif)
+├── static/css/sima.css      # extracted design tokens 60-30-10 + a11y
 ├── static/ / staticfiles/ / media/
-└── scripts/
-    └── seed_demo.py         # akun + data contoh
+└── scripts/seed_demo.py     # akun admin/pelatih/atlet + data contoh
 ```
 
 ## 6. Model Data (ringkas)
 
-- **CustomUser** — `username, password, role(admin/pelatih/jurnalis/atlet), no_hp`.
-- **Cabor** — master cabang olahraga (diinput super admin).
-- **PerguruanProfil** — 1 baris profil untuk landing (nama, tentang, visi, misi,
-  alamat, kontak, logo).
-- **AtletProfile** — `user(OneToOne, opsional)`, nama, JK, TTL, cabor FK,
-  kelas/kategori, tahun masuk, `tinggi_cm`, `berat_kg`, status aktif, foto, kontak.
-- **Prestasi** — atlet FK, kejuaraan, tingkat (kota/provinsi/nasional/internasional),
-  hasil, tahun, bukti.
-- **PenilaianKesiapan** — atlet FK + tanggal (unik), fisik/teknik/mental 0–100,
-  `vo2max`, snapshot BB/TB, kehadiran (hadir/izin/sakit/alfa), `ada_cedera` +
-  keterangan, catatan pelatih, `dinilai_oleh`. Properti: `rata_rata`, `status`
-  (Siap Tanding ≥85 / Siap Latihan ≥70 / Perlu Pembinaan ≥50 / Belum Siap / Cedera).
-- **JadwalLatihan** — cabor FK (kosong = umum), hari, jam mulai–selesai, lokasi,
-  pelatih, kelompok, aktif.
+- **CustomUser** — `username, password, role(admin/pelatih/atlet), first_name, last_name, email, no_hp`. Role `jurnalis` dihapus (migrasi `0003`).
+- **Cabor** — master cabang olahraga (hanya via `/admin/`).
+- **PerguruanProfil** — singleton profil perguruan (nama, tentang, visi, misi, alamat, kontak, logo) — hanya via `/admin/`, tampil di login & footer.
+- **AtletProfile** — `user(OneToOne, opsional)`, nama, JK, TTL, cabor FK, kelas/kategori, tahun masuk, `tinggi_cm`, `berat_kg`, status aktif, foto, kontak.
+- **Prestasi** — atlet FK, kejuaraan, tingkat, hasil, tahun, bukti.
+- **PenilaianKesiapan** — atlet FK + tanggal (unik), fisik/teknik/mental 0–100, `vo2max`, snapshot BB/TB, kehadiran, `ada_cedera` + keterangan, catatan pelatih, `dinilai_oleh`.
+- **JadwalLatihan** — cabor FK (kosong = umum), hari, jam mulai–selesai, lokasi, pelatih, kelompok, aktif.
 - **AgendaEvent** — nama, jenis, tanggal mulai–selesai, lokasi, cabor, deskripsi.
-- **Berita** — `judul/slug/kategori(umum/latihan/prestasi/event/pengumuman)`,
-  ringkasan, `konten` (HTML rich text: heading/bold/italic/list/link/image via Quill, disimpan HTML, render `|safe`), cover, `views` (auto +1 tiap buka detail), `is_published/is_featured`, penulis FK, timestamps.
-  Input kategori wajib ada; layout teks & gambar dapat diatur lewat editor. Slug auto dari judul.
-- **ContactMessage** — `nama, email, subjek, pesan, is_read, created_at` — dari halaman Kontak publik.
-- **DokumenAtlet** — `atlet FK, label(Char, bebas: KTP/KK/Akta/Ijazah/SKK dll), file, keterangan, uploaded_by FK, created_at`. Diinput admin/pelatih (untuk siapa saja) atau atlet sendiri (atlet dikunci ke profilnya).
+- **ContactMessage** — masih ada (inbox), namun halaman publik `/kontak/` sudah dihapus. Dikelola via `/admin/`.
+- **Berita** — **dihapus total** (migrasi `landing/0003_delete_berita`).
+- **DokumenAtlet** — `atlet FK, label, file, keterangan, uploaded_by FK, created_at`. Atlet dikunci ke profilnya.
 
-## 7. Peta URL
+## 7. Peta URL (saat ini)
 
 ```
-GET  /                                  landing (kontak teaser ganti jadwal)
-GET  /tentang/                          tentang kami (visi/misi, cabor)
-GET  /berita/  GET /berita/<slug>/      berita list (filter kategori/q, tampil kategori & views) + detail (views +1, rich HTML, terkait)
-GET  /prestasi/                         halaman prestasi publik (filter cabor/tingkat/q)
-GET  /kontak/                           kontak publik (info perguruan + form → ContactMessage) — menggantikan Jadwal di landing
-GET  /login/  POST /logout/             auth (tanpa register)
-GET  /admin/                            jazzmin (tidak di-link di UI — akses langsung, admin only; kini termasuk Berita.views & ContactMessage)
-GET  /dashboard/                        router by role (admin/pelatih→pelatih, jurnalis→jurnalis, atlet→saya)
-GET  /dashboard/pelatih/                overview + Chart.js
-GET  /dashboard/jurnalis/               overview jurnalis (berita+prestasi)
-GET  /dashboard/saya/                   dashboard atlet (view-only + dokumen saya)
-CRUD /dashboard/pelatih/atlet/... 
+GET  /                                  redirect → /login/ (anon) / /dashboard/ (login)
+GET  /login/  POST /logout/             auth pelatih/atlet only (admin ditolak, pesan generik)
+GET  /admin/                            Jazzmin — hanya admin (isolated)
+GET  /dashboard/                        router: admin→/admin/, pelatih→pelatih, atlet→saya
+GET  /dashboard/pelatih/                overview pelatih (chart tren adaptif dark/light, fallback jika kosong)
+GET  /dashboard/saya/                   dashboard atlet (profil → jadwal+agenda → tren → riwayat/dokumen+prestasi)
+GET  /dashboard/akun/  +  /dashboard/akun/ganti-password/   pengaturan akun sendiri (pelatih/atlet only)
+CRUD /dashboard/pelatih/atlet/...       pelatih only (strict)
 CRUD /dashboard/pelatih/kesiapan/...
-CRUD /dashboard/pelatih/prestasi/...    (juga untuk jurnalis)
-CRUD /dashboard/jurnalis/berita/...     (jurnalis, admin bebas; jurnalis hanya miliknya; form rich text Quill)
-CRUD /dashboard/pelatih/dokumen/...     (admin/pelatih kelola semua)
-CRUD /dashboard/saya/dokumen/...        (atlet kelola miliknya sendiri)
-CRUD /dashboard/pelatih/jadwal/... + event/...   (internal dashboard, tidak tampil di landing)
-     /dashboard/pelatih/cabor/ + profil-perguruan/
+CRUD /dashboard/pelatih/prestasi/...
+CRUD /dashboard/pelatih/jadwal/... + event/...
+CRUD /dashboard/pelatih/dokumen/...     pelatih only
+CRUD /dashboard/saya/dokumen/...        atlet only (atlet dikunci)
+# Dihapus: /tentang/, /berita/*, /prestasi/, /kontak/, /dashboard/jurnalis/*, /dashboard/pelatih/cabor/, /dashboard/pelatih/profil-perguruan/, /dashboard/pelatih/pengguna/* (semua via /admin/), /dashboard/pelatih/berita/* (Berita dihapus)
 ```
 
 ## 8. Cara Menjalankan (dev)
 
 ```bash
 cd SIMA
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env            # default SQLite, langsung jalan
-.venv/bin/python manage.py migrate
-.venv/bin/python scripts/seed_demo.py   # opsional: data contoh
-.venv/bin/python manage.py runserver
+.venv\Scripts\python -m pip install -r requirements.txt
+cp .env.example .env            # default SQLite: DATABASE_URL= kosong + DB_ENGINE=sqlite
+.venv\Scripts\python manage.py migrate
+.venv\Scripts\python scripts/seed_demo.py   # akun: admin/admin123, pelatih1/pelatih123, atlet1/atlet123
+.venv\Scripts\python manage.py runserver
+# → http://127.0.0.1:8000/login/   (pelatih/atlet)
+# → http://127.0.0.1:8000/admin/   (admin)
 ```
-
-Akun demo (ganti di production): `admin/admin123`, `pelatih1/pelatih123`,
-`jurnalis1/jurnalis123`, `atlet1/atlet123` (juga `atlet2`, `atlet3`). Admin link tidak ditampilkan di UI.
 
 ## 9. Migrasi ke MySQL
 
-1. Siapkan database MySQL/MariaDB (lokal/hosting) — host, port, database, user, password.
-2. Isi `.env`: `DB_ENGINE=mysql`, `DB_HOST`, `DB_PORT=3306`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
-3. `.venv/bin/python manage.py migrate` (+ `createsuperuser` bila DB kosong).
-Tanpa perubahan kode — `config/settings.py` memilih engine dari `.env`.
+1. Siapkan DB MySQL/MariaDB.
+2. Isi `.env`: `DATABASE_URL=mysql://user:pass@host:3306/sima` (prioritas) atau `DB_ENGINE=mysql` + split vars.
+3. `python manage.py migrate` (+ `createsuperuser` bila DB kosong).
 
 ## 10. Protokol Check & Test (wajib tiap pembaruan)
 
-Setiap ada fitur baru / perubahan kode, jalankan minimal:
-
 ```bash
-.venv/bin/python manage.py check
-.venv/bin/python manage.py shell -c "..."   # smoke test Test Client:
-# landing 200, login 200, anon redirect 302, dashboard pelatih 200,
-# tiap list CRUD 200, POST valid -> 302 + tersimpan, POST invalid -> 200 (ditolak),
-# atlet dashboard 200, atlet diblokir dari rute pelatih -> 403, /admin/login/ 200
+.venv\Scripts\python manage.py check
+.venv\Scripts\python manage.py shell -c "from django.test import Client; c=Client(); print(c.get('/').status_code, c.get('/login/').status_code)"
+# admin POST /login/ → 200 (pesan identik salah, anonim) ; pelatih POST /login/ → 302 → /dashboard/
+# admin /admin/ 200 ; admin /dashboard/* 403 ; pelatih /dashboard/pelatih/ 200 ; atlet /dashboard/saya/ 200
 ```
 
-Hasil terakhir (07-09-2026): `check` bersih, **15/15 test lolos** — kategori+views+rich text verified (views +1 per buka, HTML <h2>/<strong>/link/img disimpan & render safe), kontak (landing teaser + /kontak/ form → ContactMessage), jadwal diganti kontak (nav & landing). Full suite sebelumnya 27/27 & 12/12.
+## 11. Desain — 60-30-10 Ungu + A11y + Chart Umum
 
-## 11. Desain — Modern Non-Klasik, Clear & Spacious (UI Pro Max)
+- **60% `#F8FAFC` (light) / `#0B0F19` (dark):** background paper — bersih & premium.
+- **30% `#0F172A` / `#F1F5F9`:** teks & komponen — kontras tajam, nyaman di gelap.
+- **10% `#7C3AED` / `#A78BFA`:** aksen ungu vivid/neon untuk CTA & highlight — tetap nyala di dark.
+- **Chart:** garis Tunggal biru `#2563EB` (pelatih) dan trio merah `#EF4444` / biru `#2563EB` / hijau `#22C55E` (atlet), grid adaptif `#E6E9EF` ↔ `#1E2F4A`, fallback teks jika data kosong.
+- **Layout:** CSS extracted ke `static/css/sima.css` (cacheable via Whitenoise), skip-link, `:focus-visible`, `prefers-reduced-motion`, favicon SVG inline, `theme-color` meta.
+- **Navbar:** tanpa hamburger (selalu horizontal, `d-flex`), footer credit `@areybra`.
 
-- **Style:** Modern minimal — bukan klasik serif. Sans tegas: `Outfit` 800 untuk heading + `Plus Jakarta Sans` / `Space Grotesk` 500-700 untuk body. Weight tidak ramping (500-800), line-height 1.75, size 16px.
-- **Spacing lega:** section `48px` vertikal, hero `64px`, card `28px`, grid `g-4/g-5` — tiap section diberi napas, teks di-clamp 2–3 baris agar tidak bosan membaca.
-- **Palette:** paper `#F8F9FB`, stone `#F1F3F7`, ink `#0F172A`, line `#E6E9EF`, accent modern blue `#2563EB` / `#0EA5E9` (bukan champagne klasik).
-- **Ikon minimal:** navbar & home tanpa `fa-*` berlebih (home 0 ikon), hanya huruf `S` brand-mark dan dot status — tidak membebani visual.
-- **Layout input fleksibel:** `templates/dashboard/form.html:1` — `.form-grid` 2 kolom (1 kolom di mobile), checkbox full-width dengan background stone, tombol pill — tidak memanjang ke bawah.
+## 12. Keamanan — Hardening v0.1
+
+- **Settings prod:** `SECRET_KEY` wajib acak saat `DEBUG=False` (gagal boot jika `django-insecure`), `ALLOWED_HOSTS=*` ditolak, `SESSION_COOKIE_AGE=8 jam`, `Secure`/`HttpOnly`/`SameSite=Lax` + `HSTS 1 tahun + preload + NOSNIFF + Referrer-Policy` aktif otomatis saat prod; `CACHES LocMemCache` untuk rate limit.
+- **Upload:** `apps/accounts/validators.py` — allowlist `jpg/jpeg/png/webp` (foto/logo, 5MB) dan `jpg/png/webp/pdf` (dokumen/bukti, 10MB); `apps/atlets/forms.py` clean_* memblokir `.php/.exe/.svg` dkk.
+- **Brute-force:** `apps/accounts/ratelimit.py` 5 gagal / 15 menit per `IP+username` → `429`; `SIMALoginView` bump/clear cache, pesan tetap generik.
+- **Headers:** `apps/accounts/middleware.py:SecurityHeadersMiddleware` — `CSP` (`self` + `cdn.jsdelivr.net` + `fonts.googleapis`), `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options`.

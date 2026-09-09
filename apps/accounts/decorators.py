@@ -4,26 +4,24 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 
 
-def role_required(*allowed_roles):
-    """Batasi view berdasarkan CustomUser.role.
+def strict_role_required(*allowed_roles):
+    """Batasi view berdasarkan CustomUser.role saja, tanpa pengecualian.
 
-    Contoh: @role_required('admin', 'pelatih').
-    Superuser selalu lolos.
+    Superuser TIDAK otomatis lolos. Dipakai agar akun admin terisolasi
+    penuh dari dashboard (admin hanya beraktivitas di /admin/).
+
+    Contoh: @strict_role_required('pelatih').
     """
     def decorator(view_func):
         @wraps(view_func)
         @login_required
         def _wrapped(request, *args, **kwargs):
-            user = request.user
-            if user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            if getattr(user, 'role', None) in allowed_roles:
+            if getattr(request.user, 'role', None) in allowed_roles:
                 return view_func(request, *args, **kwargs)
             raise PermissionDenied('Anda tidak memiliki akses ke halaman ini.')
         return _wrapped
     return decorator
 
 
-admin_pelatih_required = role_required('admin', 'pelatih')
-jurnalis_required = role_required('admin', 'jurnalis')
-admin_pelatih_jurnalis_required = role_required('admin', 'pelatih', 'jurnalis')
+pelatih_required = strict_role_required('pelatih')
+atlet_required = strict_role_required('atlet')

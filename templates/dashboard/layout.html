@@ -52,26 +52,17 @@
       {% if user.role == 'atlet' and not user.is_superuser %}
         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-atlet' %}active{% endif %}" href="{% url 'dashboard-atlet' %}">Data Saya</a>
         <a class="nav-link {% if 'dokumen' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'dokumen-saya-list' %}">Dokumen Saya</a>
-      {% elif user.role == 'jurnalis' and not user.is_superuser %}
-        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-jurnalis' %}active{% endif %}" href="{% url 'dashboard-jurnalis' %}">Overview Jurnalis</a>
-        <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
-        <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+        <a class="nav-link {% if request.resolver_match.url_name == 'profil-akun' or request.resolver_match.url_name == 'ganti-password' %}active{% endif %}" href="{% url 'profil-akun' %}">Profil Akun</a>
       {% else %}
         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-pelatih' %}active{% endif %}" href="{% url 'dashboard-pelatih' %}">Overview</a>
         <a class="nav-link" href="{% url 'atlet-list' %}">Atlet</a>
         <a class="nav-link" href="{% url 'penilaian-list' %}">Kesiapan</a>
         <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
         <a class="nav-link" href="{% url 'jadwal-list' %}">Jadwal &amp; Event</a>
-        <a class="nav-link" href="{% url 'cabor-list' %}">Cabor</a>
         <a class="nav-link" href="{% url 'dokumen-list' %}">Dokumen Atlet</a>
-        <a class="nav-link" href="{% url 'profil-perguruan' %}">Profil Perguruan</a>
-        {% if user.is_superuser or user.role == 'admin' %}
-        <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
-        {% endif %}
+        <a class="nav-link {% if request.resolver_match.url_name == 'profil-akun' or request.resolver_match.url_name == 'ganti-password' %}active{% endif %}" href="{% url 'profil-akun' %}">Profil Akun</a>
       {% endif %}
       <div class="hairline my-2"></div>
-      <a class="nav-link" href="/">Landing</a>
-      <a class="nav-link" href="{% url 'berita-list' %}">Berita Publik</a>
       <form method="post" action="{% url 'logout' %}" class="d-grid mt-2">{% csrf_token %}<button class="btn btn-ghost btn-pill" style="min-height:44px; font-weight:700;">Keluar ({{ user.username }})</button></form>
     </div>
   </div>
@@ -101,26 +92,18 @@
           {% if user.role == 'atlet' and not user.is_superuser %}
             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-atlet' %}active{% endif %}" href="{% url 'dashboard-atlet' %}">Data Saya</a>
             <a class="nav-link {% if 'dokumen' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'dokumen-saya-list' %}">Dokumen Saya</a>
-          {% elif user.role == 'jurnalis' and not user.is_superuser %}
-            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-jurnalis' %}active{% endif %}" href="{% url 'dashboard-jurnalis' %}">Overview Jurnalis</a>
-            <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
-            <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
+            <a class="nav-link {% if request.resolver_match.url_name == 'profil-akun' or request.resolver_match.url_name == 'ganti-password' %}active{% endif %}" href="{% url 'profil-akun' %}">Profil Akun</a>
           {% else %}
             <a class="nav-link {% if request.resolver_match.url_name == 'dashboard-pelatih' %}active{% endif %}" href="{% url 'dashboard-pelatih' %}">Overview</a>
             <a class="nav-link" href="{% url 'atlet-list' %}">Atlet</a>
             <a class="nav-link" href="{% url 'penilaian-list' %}">Kesiapan</a>
             <a class="nav-link" href="{% url 'prestasi-list' %}">Prestasi</a>
             <a class="nav-link" href="{% url 'jadwal-list' %}">Jadwal &amp; Event</a>
-            <a class="nav-link" href="{% url 'cabor-list' %}">Cabor</a>
             <a class="nav-link" href="{% url 'dokumen-list' %}">Dokumen Atlet</a>
-            <a class="nav-link" href="{% url 'profil-perguruan' %}">Profil Perguruan</a>
-            {% if user.is_superuser or user.role == 'admin' %}
-            <a class="nav-link {% if 'berita' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'berita-jurnalis-list' %}">Berita</a>
-            {% endif %}
+            <a class="nav-link {% if request.resolver_match.url_name == 'profil-akun' or request.resolver_match.url_name == 'ganti-password' %}active{% endif %}" href="{% url 'profil-akun' %}">Profil Akun</a>
           {% endif %}
           <div class="hairline my-2"></div>
-          <a class="nav-link" href="/">Landing</a>
-          <a class="nav-link" href="{% url 'berita-list' %}">Berita Publik</a>
+          <form method="post" action="{% url 'logout' %}" class="d-grid mt-2">{% csrf_token %}<button class="btn btn-ghost btn-pill" style="min-height:44px; font-weight:700;">Keluar ({{ user.username }})</button></form>
         </div>
       </div>
     </div>

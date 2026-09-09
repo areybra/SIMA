@@ -39,7 +39,20 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-const ctx = document.getElementById('trenChart');
-if (ctx) new Chart(ctx, {type:'line', data:{labels: {{ tren_labels|safe }}, datasets:[{label:'Rata-rata', data: {{ tren_data|safe }}, tension:.35, borderWidth:2, borderColor:'#2563EB', backgroundColor:'rgba(37,99,235,.08)', fill:true, pointRadius:3}]}, options:{plugins:{legend:{display:false}}, scales:{y:{min:0,max:100, grid:{color:'#E6E9EF'}}, x:{grid:{display:false}}}}});
+(function(){
+  const ctx=document.getElementById('trenChart');
+  if(!ctx) return;
+  const isDark=document.documentElement.classList.contains('dark');
+  const gridColor=isDark ? '#1E2F4A' : '#E6E9EF';
+  const tickColor=isDark ? '#94A3B8' : '#5B6577';
+  const labels={{ tren_labels|safe }};
+  const data={{ tren_data|safe }};
+  if(!labels.length){
+    ctx.insertAdjacentHTML('afterend','<p class="small text-center mt-3" style="color:var(--muted)">Belum ada data tren.</p>');
+    ctx.style.display='none';
+    return;
+  }
+  new Chart(ctx,{type:'line',data:{labels:labels,datasets:[{label:'Rata-rata',data:data,tension:.35,borderWidth:2,borderColor:'#2563EB',backgroundColor:'rgba(37,99,235,.08)',fill:true,pointRadius:3}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{min:0,max:100,grid:{color:gridColor},ticks:{color:tickColor}},x:{grid:{display:false},ticks:{color:tickColor}}}}});
+})();
 </script>
 {% endblock %}

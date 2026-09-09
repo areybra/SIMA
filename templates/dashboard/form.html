@@ -1,9 +1,5 @@
 {% extends 'dashboard/layout.html' %}
 {% block title %}Form — SIMA{% endblock %}
-{% block extra_head %}
-<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
-<style>.ql-editor{min-height:220px; font-family:'Plus Jakarta Sans',sans-serif; font-size:15px} .ql-toolbar{border-color:var(--line)!important; border-radius:14px 14px 0 0} .ql-container{border-color:var(--line)!important; border-radius:0 0 14px 14px}</style>
-{% endblock %}
 {% block dash %}
 <div class="card-minimal p-5" style="max-width:900px">
   <h4 class="mb-2" style="font-family:'Outfit',sans-serif; font-weight:800;">{{ title }}</h4>
@@ -33,25 +29,4 @@
     </div>
   </form>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function(){
-  document.querySelectorAll('textarea.richtext').forEach(function(ta){
-    ta.style.display='none';
-    const wrapper=document.createElement('div');
-    wrapper.style.background='var(--surface)';
-    const editor=document.createElement('div');
-    editor.style.minHeight='220px';
-    wrapper.appendChild(editor);
-    ta.parentNode.insertBefore(wrapper, ta.nextSibling);
-    const quill=new Quill(editor, {
-      theme:'snow',
-      modules:{toolbar:[[{header:[1,2,3,false]}],['bold','italic','underline','strike'],[{list:'ordered'},{list:'bullet'}],['link','image'],['clean']]},
-      placeholder:'Tulis berita: heading, Tebal, Miring, List, Link, Gambar...'
-    });
-    if(ta.value) quill.root.innerHTML=ta.value;
-    ta.form.addEventListener('submit', function(){ ta.value=quill.root.innerHTML; });
-  });
-});
-</script>
 {% endblock %}

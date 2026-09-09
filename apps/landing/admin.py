@@ -1,15 +1,6 @@
 from django.contrib import admin
 
-from .models import Berita, ContactMessage
-
-
-@admin.register(Berita)
-class BeritaAdmin(admin.ModelAdmin):
-    list_display = ('judul', 'kategori', 'views', 'is_published', 'is_featured', 'created_at')
-    list_filter = ('kategori', 'is_published', 'is_featured')
-    search_fields = ('judul', 'ringkasan')
-    prepopulated_fields = {'slug': ('judul',)}
-    readonly_fields = ('views',)
+from .models import ContactMessage
 
 
 @admin.register(ContactMessage)

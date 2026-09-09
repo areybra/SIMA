@@ -1,23 +1,25 @@
 import json
 from datetime import timedelta
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.messages.views import SuccessMessageMixin
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField, Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 from django.utils import timezone
 
-from apps.accounts.decorators import admin_pelatih_required, jurnalis_required, role_required
-from apps.accounts.decorators import admin_pelatih_jurnalis_required
+from apps.accounts.decorators import atlet_required, pelatih_required, strict_role_required
+from apps.accounts.forms import AccountProfileForm
 from apps.atlets.forms import AtletProfileForm, CaborForm, DokumenAtletForm, PerguruanProfilForm, PrestasiForm
 from apps.atlets.models import AtletProfile, Cabor, DokumenAtlet, PerguruanProfil, Prestasi
 from apps.jadwal.forms import AgendaEventForm, JadwalLatihanForm
 from apps.jadwal.models import AgendaEvent, JadwalLatihan
 from apps.kesiapan.forms import PenilaianKesiapanForm
 from apps.kesiapan.models import PenilaianKesiapan
-from apps.landing.forms import BeritaForm
-from apps.landing.models import Berita
 
 
 @login_required
@@ -25,15 +27,43 @@ def dashboard_router(request):
     user = request.user
     role = getattr(user, 'role', '')
     if user.is_superuser or role == 'admin':
-        return redirect('dashboard-pelatih')
+        # Admin terisolasi penuh dari dashboard — CRUD hanya di /admin/.
+        return redirect('/admin/')
     if role == 'pelatih':
         return redirect('dashboard-pelatih')
-    if role == 'jurnalis':
-        return redirect('dashboard-jurnalis')
     return redirect('dashboard-atlet')
 
 
-@admin_pelatih_required
+@strict_role_required('pelatih', 'atlet')
+def profil_akun(request):
+    """Pengaturan akun milik sendiri (username, nama, email, no HP).
+
+    Bukan profil data atlet — role tidak bisa diubah dari sini.
+    """
+    form = AccountProfileForm(request.POST or None, instance=request.user)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Profil akun berhasil diperbarui.')
+        return redirect('profil-akun')
+    return render(request, 'dashboard/profil_akun.html', {'form': form})
+
+
+class GantiPasswordView(UserPassesTestMixin, SuccessMessageMixin, PasswordChangeView):
+    template_name = 'dashboard/ganti_password.html'
+    success_url = reverse_lazy('profil-akun')
+    success_message = 'Password berhasil diganti.'
+
+    def test_func(self):
+        return getattr(self.request.user, 'role', '') in ('pelatih', 'atlet')
+
+    def get_form(self, *args, **kwargs):
+        form = super().get_form(*args, **kwargs)
+        for field in form.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+        return form
+
+
+@pelatih_required
 def pelatih_dashboard(request):
     rata_expr = ExpressionWrapper((F('fisik') + F('teknik') + F('mental')) / 3.0, output_field=FloatField())
     total_atlet = AtletProfile.objects.filter(status_aktif=True).count()
@@ -77,7 +107,7 @@ def pelatih_dashboard(request):
     return render(request, 'dashboard/pelatih.html', context)
 
 
-@role_required('atlet')
+@atlet_required
 def atlet_dashboard(request):
     profil = getattr(request.user, 'atlet_profile', None)
     if profil is None:
@@ -110,69 +140,6 @@ def atlet_dashboard(request):
     return render(request, 'dashboard/atlet.html', context)
 
 
-# ---- Jurnalis dashboard ----
-@jurnalis_required
-def jurnalis_dashboard(request):
-    total_berita = Berita.objects.count()
-    total_published = Berita.objects.filter(is_published=True).count()
-    total_draft = total_berita - total_published
-    total_prestasi = Prestasi.objects.count()
-    berita_terbaru = Berita.objects.order_by('-created_at')[:6]
-    prestasi_terbaru = Prestasi.objects.select_related('atlet').order_by('-tahun', '-id')[:6]
-    return render(request, 'dashboard/jurnalis.html', {
-        'total_berita': total_berita,
-        'total_published': total_published,
-        'total_draft': total_draft,
-        'total_prestasi': total_prestasi,
-        'berita_terbaru': berita_terbaru,
-        'prestasi_terbaru': prestasi_terbaru,
-    })
-
-
-@jurnalis_required
-def berita_jurnalis_list(request):
-    q = request.GET.get('q', '').strip()
-    qs = Berita.objects.order_by('-created_at')
-    if q:
-        qs = qs.filter(Q(judul__icontains=q) | Q(ringkasan__icontains=q))
-    return render(request, 'dashboard/berita_list.html', {'object_list': qs, 'q': q})
-
-
-@jurnalis_required
-def berita_jurnalis_create(request):
-    form = BeritaForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        obj = form.save(commit=False)
-        obj.penulis = request.user
-        obj.save()
-        return redirect('berita-jurnalis-list')
-    return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Berita'})
-
-
-@jurnalis_required
-def berita_jurnalis_update(request, pk):
-    obj = get_object_or_404(Berita, pk=pk)
-    # jurnalis hanya boleh edit miliknya sendiri kecuali admin
-    if not request.user.is_superuser and getattr(request.user, 'role', '') == 'jurnalis' and obj.penulis and obj.penulis != request.user:
-        raise PermissionDenied('Anda hanya boleh mengubah berita milik Anda.')
-    form = BeritaForm(request.POST or None, request.FILES or None, instance=obj)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect('berita-jurnalis-list')
-    return render(request, 'dashboard/form.html', {'form': form, 'title': f'Ubah Berita: {obj.judul}'})
-
-
-@jurnalis_required
-def berita_jurnalis_delete(request, pk):
-    obj = get_object_or_404(Berita, pk=pk)
-    if not request.user.is_superuser and getattr(request.user, 'role', '') == 'jurnalis' and obj.penulis and obj.penulis != request.user:
-        raise PermissionDenied('Anda hanya boleh menghapus berita milik Anda.')
-    if request.method == 'POST':
-        obj.delete()
-        return redirect('berita-jurnalis-list')
-    return render(request, 'dashboard/confirm_delete.html', {'object': obj})
-
-
 # ---------- generic CRUD helper ----------
 def _crud_list_create(request, model, form_class, template, redirect_name, order='-id'):
     qs = model.objects.all().order_by(order) if hasattr(model.objects, 'all') else None
@@ -189,7 +156,7 @@ def _crud_list_create(request, model, form_class, template, redirect_name, order
     return render(request, template, {'object_list': qs, 'form': form})
 
 
-@admin_pelatih_required
+@pelatih_required
 def atlet_list(request):
     q = request.GET.get('q', '')
     cabor_id = request.GET.get('cabor', '')
@@ -204,7 +171,7 @@ def atlet_list(request):
     })
 
 
-@admin_pelatih_required
+@pelatih_required
 def atlet_create(request):
     form = AtletProfileForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
@@ -213,7 +180,7 @@ def atlet_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Atlet'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def atlet_update(request, pk):
     obj = get_object_or_404(AtletProfile, pk=pk)
     form = AtletProfileForm(request.POST or None, request.FILES or None, instance=obj)
@@ -223,7 +190,7 @@ def atlet_update(request, pk):
     return render(request, 'dashboard/form.html', {'form': form, 'title': f'Ubah Atlet: {obj.nama_lengkap}'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def atlet_delete(request, pk):
     obj = get_object_or_404(AtletProfile, pk=pk)
     if request.method == 'POST':
@@ -232,7 +199,7 @@ def atlet_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@admin_pelatih_required
+@pelatih_required
 def penilaian_list(request):
     qs = PenilaianKesiapan.objects.select_related('atlet', 'atlet__cabor').order_by('-tanggal')
     atlet_id = request.GET.get('atlet', '')
@@ -245,7 +212,7 @@ def penilaian_list(request):
     })
 
 
-@admin_pelatih_required
+@pelatih_required
 def penilaian_create(request):
     form = PenilaianKesiapanForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -256,7 +223,7 @@ def penilaian_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Input Penilaian Kesiapan'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def penilaian_update(request, pk):
     obj = get_object_or_404(PenilaianKesiapan, pk=pk)
     form = PenilaianKesiapanForm(request.POST or None, instance=obj)
@@ -266,7 +233,7 @@ def penilaian_update(request, pk):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Ubah Penilaian'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def penilaian_delete(request, pk):
     obj = get_object_or_404(PenilaianKesiapan, pk=pk)
     if request.method == 'POST':
@@ -275,25 +242,22 @@ def penilaian_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@admin_pelatih_jurnalis_required
+@pelatih_required
 def prestasi_list(request):
     qs = Prestasi.objects.select_related('atlet').order_by('-tahun')
     return render(request, 'dashboard/prestasi_list.html', {'object_list': qs})
 
 
-@admin_pelatih_jurnalis_required
+@pelatih_required
 def prestasi_create(request):
     form = PrestasiForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         form.save()
-        # jurnalis kembali ke list jurnalis bila bukan pelatih
-        if getattr(request.user, 'role', '') == 'jurnalis':
-            return redirect('prestasi-list')
         return redirect('prestasi-list')
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Prestasi'})
 
 
-@admin_pelatih_jurnalis_required
+@pelatih_required
 def prestasi_update(request, pk):
     obj = get_object_or_404(Prestasi, pk=pk)
     form = PrestasiForm(request.POST or None, request.FILES or None, instance=obj)
@@ -303,7 +267,7 @@ def prestasi_update(request, pk):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Ubah Prestasi'})
 
 
-@admin_pelatih_jurnalis_required
+@pelatih_required
 def prestasi_delete(request, pk):
     obj = get_object_or_404(Prestasi, pk=pk)
     if request.method == 'POST':
@@ -312,7 +276,7 @@ def prestasi_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@admin_pelatih_required
+@pelatih_required
 def jadwal_list(request):
     return render(request, 'dashboard/jadwal_list.html', {
         'jadwal': JadwalLatihan.objects.select_related('cabor').order_by('hari'),
@@ -320,7 +284,7 @@ def jadwal_list(request):
     })
 
 
-@admin_pelatih_required
+@pelatih_required
 def jadwal_create(request):
     form = JadwalLatihanForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -329,7 +293,7 @@ def jadwal_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Jadwal Latihan'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def jadwal_update(request, pk):
     obj = get_object_or_404(JadwalLatihan, pk=pk)
     form = JadwalLatihanForm(request.POST or None, instance=obj)
@@ -339,7 +303,7 @@ def jadwal_update(request, pk):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Ubah Jadwal'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def jadwal_delete(request, pk):
     obj = get_object_or_404(JadwalLatihan, pk=pk)
     if request.method == 'POST':
@@ -348,7 +312,7 @@ def jadwal_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@admin_pelatih_required
+@pelatih_required
 def event_create(request):
     form = AgendaEventForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
@@ -357,7 +321,7 @@ def event_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Agenda/Event'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def event_update(request, pk):
     obj = get_object_or_404(AgendaEvent, pk=pk)
     form = AgendaEventForm(request.POST or None, instance=obj)
@@ -367,7 +331,7 @@ def event_update(request, pk):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Ubah Agenda/Event'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def event_delete(request, pk):
     obj = get_object_or_404(AgendaEvent, pk=pk)
     if request.method == 'POST':
@@ -376,41 +340,8 @@ def event_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@admin_pelatih_required
-def cabor_list(request):
-    if request.method == 'POST':
-        form = CaborForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('cabor-list')
-    else:
-        form = CaborForm()
-    return render(request, 'dashboard/cabor_list.html', {
-        'object_list': Cabor.objects.order_by('nama'), 'form': form,
-    })
-
-
-@admin_pelatih_required
-def cabor_delete(request, pk):
-    obj = get_object_or_404(Cabor, pk=pk)
-    if request.method == 'POST':
-        obj.delete()
-        return redirect('cabor-list')
-    return render(request, 'dashboard/confirm_delete.html', {'object': obj})
-
-
-@admin_pelatih_required
-def profil_perguruan(request):
-    obj = PerguruanProfil.objects.first()
-    form = PerguruanProfilForm(request.POST or None, request.FILES or None, instance=obj)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        return redirect('dashboard-pelatih')
-    return render(request, 'dashboard/form.html', {'form': form, 'title': 'Profil Perguruan (Landing Page)'})
-
-
 # ---- Dokumen Atlet ----
-@admin_pelatih_required
+@pelatih_required
 def dokumen_list(request):
     q = request.GET.get('q', '').strip()
     atlet_id = request.GET.get('atlet', '').strip()
@@ -427,7 +358,7 @@ def dokumen_list(request):
     })
 
 
-@admin_pelatih_required
+@pelatih_required
 def dokumen_create(request):
     form = DokumenAtletForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
@@ -438,7 +369,7 @@ def dokumen_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Tambah Dokumen Atlet'})
 
 
-@admin_pelatih_required
+@pelatih_required
 def dokumen_delete(request, pk):
     obj = get_object_or_404(DokumenAtlet, pk=pk)
     if request.method == 'POST':
@@ -447,7 +378,7 @@ def dokumen_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'object': obj})
 
 
-@role_required('atlet')
+@atlet_required
 def dokumen_saya_list(request):
     profil = getattr(request.user, 'atlet_profile', None)
     if profil is None:
@@ -459,7 +390,7 @@ def dokumen_saya_list(request):
     })
 
 
-@role_required('atlet')
+@atlet_required
 def dokumen_saya_create(request):
     profil = getattr(request.user, 'atlet_profile', None)
     if profil is None:
@@ -477,7 +408,7 @@ def dokumen_saya_create(request):
     return render(request, 'dashboard/form.html', {'form': form, 'title': 'Upload Dokumen Saya'})
 
 
-@role_required('atlet')
+@atlet_required
 def dokumen_saya_delete(request, pk):
     profil = getattr(request.user, 'atlet_profile', None)
     obj = get_object_or_404(DokumenAtlet, pk=pk, atlet=profil)
