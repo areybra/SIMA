@@ -22,5 +22,5 @@ urlpatterns = [
     path('', include('apps.landing.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve media di semua env (Vercel DEBUG=False butuh ini, file di /tmp/media)
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
